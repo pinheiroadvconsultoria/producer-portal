@@ -19,12 +19,26 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   return json
 }
 
+type AuthResponse = { token: string; producer: { nome: string; email: string; municipio: string; uf: string } }
+
 export const api = {
-  auth: (whatsapp: string, cpfCnpj: string) =>
-    request<{ token: string; producer: { nome: string; email: string; municipio: string; uf: string } }>(
-      '/api/producer/auth',
-      { method: 'POST', body: JSON.stringify({ whatsapp, cpfCnpj }) }
-    ),
+  auth: (cpfCnpj: string, password: string) =>
+    request<AuthResponse>('/api/producer/auth', {
+      method: 'POST',
+      body: JSON.stringify({ cpfCnpj, password }),
+    }),
+
+  firstAccess: (cpfCnpj: string, whatsapp: string, newPassword: string) =>
+    request<AuthResponse>('/api/producer/first-access', {
+      method: 'POST',
+      body: JSON.stringify({ cpfCnpj, whatsapp, newPassword }),
+    }),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request('/api/producer/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
 
   me: () => request<{ data: ProducerData }>('/api/producer/me'),
 

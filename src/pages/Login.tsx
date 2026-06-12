@@ -1,14 +1,8 @@
 import { useState } from 'react'
-import { Sprout, Phone, FileText, Loader2, AlertCircle } from 'lucide-react'
+import { Sprout, FileText, Lock, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react'
 import { api } from '../services/api'
 import { usePortalStore } from '../store/usePortalStore'
-
-function maskPhone(v: string) {
-  const d = v.replace(/\D/g, '').slice(0, 11)
-  if (d.length <= 2) return d
-  if (d.length <= 7) return `(${d.slice(0,2)}) ${d.slice(2)}`
-  return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`
-}
+import { FirstAccess } from './FirstAccess'
 
 function maskDoc(v: string) {
   const d = v.replace(/\D/g, '').slice(0, 14)
@@ -24,26 +18,33 @@ function maskDoc(v: string) {
 
 export function Login() {
   const setAuth = usePortalStore(s => s.setAuth)
-  const [phone, setPhone]   = useState('')
-  const [doc, setDoc]       = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError]   = useState<string | null>(null)
+  const [doc, setDoc]           = useState('')
+  const [password, setPassword] = useState('')
+  const [showPass, setShowPass] = useState(false)
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState<string | null>(null)
+  const [firstAccess, setFirstAccess] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
     try {
-      const res = await api.auth(
-        phone.replace(/\D/g, ''),
-        doc.replace(/\D/g, '')
-      )
+      const res = await api.auth(doc.replace(/\D/g, ''), password)
       setAuth(res.token, res.producer.nome)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Erro ao acessar portal')
+      if (err instanceof Error && err.message.includes('primeiro acesso')) {
+        setFirstAccess(true)
+      } else {
+        setError(err instanceof Error ? err.message : 'Erro ao acessar portal')
+      }
     } finally {
       setLoading(false)
     }
+  }
+
+  if (firstAccess) {
+    return <FirstAccess onBack={() => setFirstAccess(false)} />
   }
 
   return (
@@ -67,24 +68,6 @@ export function Login() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* WhatsApp */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                WhatsApp cadastrado
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={e => setPhone(maskPhone(e.target.value))}
-                  placeholder="(65) 99999-9999"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green focus:border-transparent text-gray-800"
-                  required
-                />
-              </div>
-            </div>
-
             {/* CPF/CNPJ */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -100,6 +83,31 @@ export function Login() {
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green focus:border-transparent text-gray-800"
                   required
                 />
+              </div>
+            </div>
+
+            {/* Senha */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Senha
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Sua senha de acesso"
+                  className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green focus:border-transparent text-gray-800"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -125,7 +133,17 @@ export function Login() {
             </button>
           </form>
 
-          <p className="text-center text-xs text-gray-400 mt-6">
+          {/* Primeiro acesso */}
+          <div className="mt-5 text-center">
+            <button
+              onClick={() => setFirstAccess(true)}
+              className="text-sm text-agro-green hover:text-agro-dark font-medium underline underline-offset-2"
+            >
+              Primeiro acesso? Clique aqui para criar sua senha
+            </button>
+          </div>
+
+          <p className="text-center text-xs text-gray-400 mt-4">
             Acesso exclusivo para produtores cadastrados no sistema NPL
           </p>
         </div>
