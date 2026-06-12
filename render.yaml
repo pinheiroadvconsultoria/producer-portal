@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: agrocredit-producer-portal
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    pullRequestPreviewsEnabled: true
+    envVars:
+      - key: VITE_API_URL
+        value: https://agrocredit-7ou0.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
