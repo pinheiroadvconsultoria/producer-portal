@@ -147,6 +147,18 @@ export function Login() {
             Acesso exclusivo para produtores cadastrados no sistema NPL
           </p>
         </div>
+
+        <div className="text-center mt-6">
+          <button
+            onClick={() => {
+              window.history.pushState(null, '', '/download')
+              window.dispatchEvent(new PopStateEvent('popstate'))
+            }}
+            className="text-sm text-white/70 hover:text-white font-medium underline underline-offset-2"
+          >
+            Instalar aplicativo no Chrome
+          </button>
+        </div>
       </div>
     </div>
   )
