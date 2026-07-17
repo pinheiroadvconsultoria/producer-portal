@@ -4,17 +4,49 @@ function getToken() {
   return localStorage.getItem('producer_token')
 }
 
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
+
+/**
+ * Acorda o backend (plano free do Render hiberna após inatividade).
+ * Chamado no carregamento do app — assim, quando o produtor enviar o
+ * formulário, o servidor já está de pé.
+ */
+export function warmUpApi() {
+  fetch(`${BASE}/health`).catch(() => {})
+}
+
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const token = getToken()
-  const res = await fetch(`${BASE}${path}`, {
-    ...opts,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(opts.headers || {}),
-    },
-  })
-  const json = await res.json()
+  const doFetch = () =>
+    fetch(`${BASE}${path}`, {
+      ...opts,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(opts.headers || {}),
+      },
+    })
+
+  // Retry para falhas de REDE (backend acordando do cold start) — nunca
+  // para respostas HTTP de erro, que são definitivas.
+  let res: Response
+  try {
+    res = await doFetch()
+  } catch {
+    await sleep(3000)
+    try {
+      res = await doFetch()
+    } catch {
+      await sleep(6000)
+      try {
+        res = await doFetch()
+      } catch {
+        throw new Error('O servidor está iniciando. Aguarde alguns segundos e tente novamente.')
+      }
+    }
+  }
+
+  const json = await res.json().catch(() => ({}))
   if (!res.ok) throw new Error(json.error || 'Erro na requisição')
   return json
 }
