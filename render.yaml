@@ -7,7 +7,7 @@ services:
     pullRequestPreviewsEnabled: true
     envVars:
       - key: VITE_API_URL
-        value: https://agrocredit-7ou0.onrender.com
+        value: https://agrocredit-api-txbj.onrender.com
     routes:
       - type: rewrite
         source: /*

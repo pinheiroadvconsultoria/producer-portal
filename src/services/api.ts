@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_URL || 'https://agrocredit-7ou0.onrender.com'
+const BASE = import.meta.env.VITE_API_URL || 'https://agrocredit-api-txbj.onrender.com'
 
 function getToken() {
   return localStorage.getItem('producer_token')
