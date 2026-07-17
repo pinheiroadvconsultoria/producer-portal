@@ -1,4 +1,12 @@
-const BASE = import.meta.env.VITE_API_URL || 'https://agrocredit-api-txbj.onrender.com'
+const DIRECT = import.meta.env.VITE_API_URL || 'https://agrocredit-api-txbj.onrender.com'
+
+/**
+ * Dois caminhos até o backend, tentados em sequência:
+ *   ''      → mesma origem (proxy /api do próprio site) — imune a extensões
+ *             bloqueadoras; em dev, o proxy do Vite cumpre o mesmo papel.
+ *   DIRECT  → URL direta do backend — funciona mesmo sem o proxy configurado.
+ */
+const BASES = ['', DIRECT]
 
 function getToken() {
   return localStorage.getItem('producer_token')
@@ -6,49 +14,49 @@ function getToken() {
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
 
+/** Erro HTTP definitivo (credencial errada etc.) — não adianta tentar outro caminho. */
+class ApiHttpError extends Error {}
+
 /**
  * Acorda o backend (plano free do Render hiberna após inatividade).
  * Chamado no carregamento do app — assim, quando o produtor enviar o
  * formulário, o servidor já está de pé.
  */
 export function warmUpApi() {
-  fetch(`${BASE}/health`).catch(() => {})
+  fetch(`${DIRECT}/health`).catch(() => {})
+  fetch('/api/health').catch(() => {})
 }
 
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const token = getToken()
-  const doFetch = () =>
-    fetch(`${BASE}${path}`, {
-      ...opts,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(opts.headers || {}),
-      },
-    })
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(opts.headers || {}),
+  }
 
-  // Retry para falhas de REDE (backend acordando do cold start) — nunca
-  // para respostas HTTP de erro, que são definitivas.
-  let res: Response
-  try {
-    res = await doFetch()
-  } catch {
-    await sleep(3000)
-    try {
-      res = await doFetch()
-    } catch {
-      await sleep(6000)
+  for (let round = 0; round < 3; round++) {
+    if (round > 0) await sleep(round * 3000)
+    for (const base of BASES) {
       try {
-        res = await doFetch()
-      } catch {
-        throw new Error('O servidor está iniciando. Aguarde alguns segundos e tente novamente.')
+        const res = await fetch(`${base}${path}`, { ...opts, headers })
+        const ct = res.headers.get('content-type') || ''
+        // HTML = proxy inexistente ou página de erro do host — tenta o próximo caminho
+        if (!ct.includes('application/json')) continue
+        const json = await res.json()
+        if (!res.ok) throw new ApiHttpError(json.error || 'Erro na requisição')
+        return json
+      } catch (e) {
+        if (e instanceof ApiHttpError) throw e
+        // falha de rede (bloqueio, cold start, queda) — tenta o próximo caminho
       }
     }
   }
 
-  const json = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(json.error || 'Erro na requisição')
-  return json
+  throw new Error(
+    'Não foi possível conectar ao servidor. Se você usa bloqueador de anúncios, ' +
+    'antivírus com proteção web ou VPN, permita o site e tente novamente.'
+  )
 }
 
 type AuthResponse = { token: string; producer: { nome: string; email: string; municipio: string; uf: string } }

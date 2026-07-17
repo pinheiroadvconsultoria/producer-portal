@@ -3,7 +3,7 @@
  * Permite instalação como PWA (Chrome), cache básico e funcionamento offline parcial.
  */
 
-const CACHE_NAME = 'portal-produtor-v1.0.0'
+const CACHE_NAME = 'portal-produtor-v1.0.1'
 const OFFLINE_URL = '/offline.html'
 
 const PRECACHE = [
