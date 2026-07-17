@@ -8,6 +8,8 @@ import { ContractSection } from '../components/ContractSection'
 import { ProposalSection } from '../components/ProposalSection'
 import { PendenciasSection } from '../components/PendenciasSection'
 import { BankingSection } from '../components/BankingSection'
+import { NewsSection, InstitutionalLinks } from '../components/NewsSection'
+import { EduardoChat } from '../components/EduardoChat'
 
 type Tab = 'status' | 'proposta' | 'contrato' | 'bancario'
 
@@ -134,6 +136,8 @@ export function Portal() {
                 <SummaryCards data={data} />
                 <StatusTimeline current={data.crmStage} />
                 <PendenciasSection data={data} />
+                <NewsSection />
+                <InstitutionalLinks />
               </>
             )}
 
@@ -162,10 +166,21 @@ export function Portal() {
       </main>
 
       {/* Footer */}
-      <footer className="max-w-lg mx-auto px-4 py-6 text-center">
-        <p className="text-xs text-gray-400">NPL Sociedade de Advogados · AgroCredit AI</p>
+      <footer className="max-w-lg mx-auto px-4 py-6 pb-24 text-center">
+        <p className="text-xs text-gray-400">
+          <a href="https://npladvogados.com.br/" target="_blank" rel="noopener noreferrer" className="hover:text-agro-green">
+            NPL Sociedade de Advogados
+          </a>
+          {' · '}
+          <a href="https://npladvs.com.br/credito-rural" target="_blank" rel="noopener noreferrer" className="hover:text-agro-green">
+            AgroCredit
+          </a>
+        </p>
         <p className="text-xs text-gray-300 mt-0.5">Portal do Produtor Rural</p>
       </footer>
+
+      {/* Eduardo — atendimento 24h */}
+      <EduardoChat />
     </div>
   )
 }

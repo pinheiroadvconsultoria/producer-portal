@@ -20,10 +20,34 @@ interface Props {
 
 export function StatusTimeline({ current }: Props) {
   const currentIdx = STAGES.findIndex(s => s.key === current)
+  const progress = currentIdx >= 0 ? Math.round(((currentIdx + 1) / STAGES.length) * 100) : 0
+  const currentStage = currentIdx >= 0 ? STAGES[currentIdx] : null
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-      <h2 className="text-lg font-semibold text-gray-800 mb-6">Status do Processo</h2>
+      <h2 className="text-lg font-semibold text-gray-800">Andamento do Processo</h2>
+      <p className="text-xs text-gray-400 mb-4">
+        Movimentação do seu processo administrativo/judicial de crédito rural, etapa por etapa
+      </p>
+
+      {/* Resumo de progresso */}
+      <div className="rounded-xl bg-agro-cream/60 border border-agro-lime/30 p-4 mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-semibold text-agro-dark">
+            {currentStage ? `Etapa ${currentIdx + 1} de ${STAGES.length}: ${currentStage.label}` : 'Em processamento'}
+          </p>
+          <span className="text-sm font-bold text-agro-green">{progress}%</span>
+        </div>
+        <div className="h-2.5 rounded-full bg-white overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-agro-green to-agro-lime transition-all"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        {currentStage && (
+          <p className="text-xs text-gray-500 mt-2">{currentStage.description}</p>
+        )}
+      </div>
       <div className="relative">
         {/* Vertical line */}
         <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-100" />

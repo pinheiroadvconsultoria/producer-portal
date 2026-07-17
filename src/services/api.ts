@@ -49,6 +49,17 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ message }),
     }),
+
+  chat: (messages: ChatMessage[]) =>
+    request<{ reply: string; fallback: boolean }>('/api/producer/chat', {
+      method: 'POST',
+      body: JSON.stringify({ messages }),
+    }),
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
 }
 
 export type CrmStage =
