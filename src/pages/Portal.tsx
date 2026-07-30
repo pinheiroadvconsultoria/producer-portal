@@ -9,6 +9,7 @@ import { ProposalSection } from '../components/ProposalSection'
 import { PendenciasSection } from '../components/PendenciasSection'
 import { BankingSection } from '../components/BankingSection'
 import { NewsSection, InstitutionalLinks } from '../components/NewsSection'
+import { ProcessMovements } from '../components/ProcessMovements'
 import { EduardoChat } from '../components/EduardoChat'
 
 type Tab = 'status' | 'proposta' | 'contrato' | 'bancario'
@@ -135,6 +136,16 @@ export function Portal() {
               <>
                 <SummaryCards data={data} />
                 <StatusTimeline current={data.crmStage} />
+                {data.temProcessoJudicial && (
+                  <ProcessMovements
+                    tipoAcao={data.tipoAcao}
+                    numeroProcesso={data.numeroProcesso}
+                    vara={data.vara}
+                    comarca={data.comarca}
+                    faseProcessual={data.faseProcessual}
+                    movements={data.movements || []}
+                  />
+                )}
                 <PendenciasSection data={data} />
                 <NewsSection />
                 <InstitutionalLinks />

@@ -91,10 +91,37 @@ export const api = {
     }),
 
   chat: (messages: ChatMessage[]) =>
-    request<{ reply: string; fallback: boolean }>('/api/producer/chat', {
+    request<{ reply: string; fallback: boolean; escalated: boolean }>('/api/producer/chat', {
       method: 'POST',
       body: JSON.stringify({ messages }),
     }),
+}
+
+// ── Área administrativa (advogado NPL) ───────────────────────────────────────
+// Autenticação por chave compartilhada (x-admin-key), não pelo token do produtor.
+async function adminRequest<T>(adminKey: string, path: string, opts: RequestInit = {}): Promise<T> {
+  return request<T>(path, {
+    ...opts,
+    headers: { 'x-admin-key': adminKey, ...(opts.headers || {}) },
+  })
+}
+
+export const adminApi = {
+  listLeads: (key: string) => adminRequest<{ data: AdminLeadSummary[] }>(key, '/api/admin/leads'),
+
+  getLead: (key: string, id: string) => adminRequest<{ data: ProducerData }>(key, `/api/admin/leads/${id}`),
+
+  updateProcess: (key: string, id: string, patch: Partial<ProcessFields>) =>
+    adminRequest(key, `/api/admin/leads/${id}/process`, { method: 'PATCH', body: JSON.stringify(patch) }),
+
+  addMovement: (key: string, id: string, m: { data: string; titulo: string; descricao?: string }) =>
+    adminRequest<{ data: ProcessMovement }>(key, `/api/admin/leads/${id}/movements`, {
+      method: 'POST',
+      body: JSON.stringify(m),
+    }),
+
+  deleteMovement: (key: string, movementId: string) =>
+    adminRequest(key, `/api/admin/movements/${movementId}`, { method: 'DELETE' }),
 }
 
 export interface ChatMessage {
@@ -139,7 +166,45 @@ export interface Task {
   status: string
 }
 
-export interface ProducerData {
+export type CaseType =
+  | 'alongamento_divida_rural'
+  | 'revisional_contrato_bancario'
+  | 'execucao_judicial'
+  | 'outro'
+
+export interface ProcessMovement {
+  id: string
+  data: string
+  titulo: string
+  descricao?: string | null
+  createdAt: string
+}
+
+export interface ProcessFields {
+  temProcessoJudicial: boolean
+  tipoAcao: CaseType | null
+  numeroProcesso: string | null
+  vara: string | null
+  comarca: string | null
+  faseProcessual: string | null
+}
+
+export interface AdminLeadSummary {
+  id: string
+  nome: string
+  whatsapp: string
+  cpfCnpj?: string
+  municipio: string
+  uf: string
+  crmStage: CrmStage
+  temProcessoJudicial: boolean
+  tipoAcao: CaseType | null
+  numeroProcesso: string | null
+  faseProcessual: string | null
+  createdAt: string
+}
+
+export interface ProducerData extends Partial<ProcessFields> {
   id: string
   nome: string
   email: string
@@ -171,6 +236,7 @@ export interface ProducerData {
   notes: Note[]
   followUps: FollowUp[]
   tasks: Task[]
+  movements?: ProcessMovement[]
   documentos?: unknown
   updatedAt: string
 }

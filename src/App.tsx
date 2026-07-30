@@ -4,23 +4,25 @@ import { usePortalStore } from './store/usePortalStore'
 import { Login } from './pages/Login'
 import { Portal } from './pages/Portal'
 import { Download } from './pages/Download'
+import { AdminPage } from './pages/AdminPage'
 import { InstallPWA } from './components/InstallPWA'
 
-function isDownloadPath() {
-  return typeof window !== 'undefined' && window.location.pathname.replace(/\/+$/, '') === '/download'
+function currentPath() {
+  return typeof window !== 'undefined' ? window.location.pathname.replace(/\/+$/, '') : ''
 }
 
 export default function App() {
   const token = usePortalStore(s => s.token)
-  const [onDownload, setOnDownload] = useState(isDownloadPath)
+  const [path, setPath] = useState(currentPath)
 
   useEffect(() => {
-    const onPop = () => setOnDownload(isDownloadPath())
+    const onPop = () => setPath(currentPath())
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
 
-  if (onDownload) return <Download />
+  if (path === '/download') return <Download />
+  if (path === '/admin') return <AdminPage />
 
   return (
     <>

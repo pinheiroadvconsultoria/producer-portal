@@ -4,18 +4,22 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { Send, X, Loader2, Scale } from 'lucide-react'
+import { Send, X, Loader2, Scale, BellRing } from 'lucide-react'
 import { api, type ChatMessage } from '../services/api'
 
-const WELCOME: ChatMessage = {
+interface UiMessage extends ChatMessage {
+  escalated?: boolean
+}
+
+const WELCOME: UiMessage = {
   role: 'assistant',
   content:
-    'Olá! Sou o Eduardo, atendente da NPL especialista em direito do agronegócio. Estou disponível 24 horas para tirar dúvidas sobre o seu processo de crédito rural, linhas de financiamento e o Plano Safra. Como posso ajudar?',
+    'Olá! Sou o Eduardo, atendente da NPL especialista em direito do agronegócio. Estou disponível 24 horas para tirar dúvidas sobre o seu processo de crédito rural, linhas de financiamento, e também sobre ações judiciais como alongamento de dívida rural. Como posso ajudar?',
 }
 
 export function EduardoChat() {
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME])
+  const [messages, setMessages] = useState<UiMessage[]>([WELCOME])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -28,13 +32,13 @@ export function EduardoChat() {
     const text = input.trim()
     if (!text || sending) return
     setInput('')
-    const next: ChatMessage[] = [...messages, { role: 'user', content: text }]
+    const next: UiMessage[] = [...messages, { role: 'user', content: text }]
     setMessages(next)
     setSending(true)
     try {
       // O histórico enviado exclui a mensagem de boas-vindas local
       const res = await api.chat(next.slice(1))
-      setMessages([...next, { role: 'assistant', content: res.reply }])
+      setMessages([...next, { role: 'assistant', content: res.reply, escalated: res.escalated }])
     } catch {
       setMessages([
         ...next,
@@ -87,7 +91,7 @@ export function EduardoChat() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-agro-cream/50">
         {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
             <div
               className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap leading-relaxed ${
                 m.role === 'user'
@@ -97,6 +101,12 @@ export function EduardoChat() {
             >
               {m.content}
             </div>
+            {m.escalated && (
+              <div className="mt-1 flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-medium">
+                <BellRing className="w-3 h-3" />
+                Encaminhado para um advogado da NPL
+              </div>
+            )}
           </div>
         ))}
         {sending && (
