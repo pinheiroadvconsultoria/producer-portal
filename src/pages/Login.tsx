@@ -3,6 +3,7 @@ import { Sprout, FileText, Lock, Eye, EyeOff, Loader2, AlertCircle } from 'lucid
 import { api } from '../services/api'
 import { usePortalStore } from '../store/usePortalStore'
 import { FirstAccess } from './FirstAccess'
+import { SignUp } from './SignUp'
 
 function maskDoc(v: string) {
   const d = v.replace(/\D/g, '').slice(0, 14)
@@ -24,6 +25,7 @@ export function Login() {
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState<string | null>(null)
   const [firstAccess, setFirstAccess] = useState(false)
+  const [signUp, setSignUp]     = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -41,6 +43,15 @@ export function Login() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (signUp) {
+    return (
+      <SignUp
+        onBack={() => setSignUp(false)}
+        onNeedFirstAccess={() => { setSignUp(false); setFirstAccess(true) }}
+      />
+    )
   }
 
   if (firstAccess) {
@@ -133,19 +144,26 @@ export function Login() {
             </button>
           </form>
 
-          {/* Primeiro acesso */}
-          <div className="mt-5 text-center">
+          {/* Criar conta — autocadastro aberto */}
+          <div className="mt-5 pt-5 border-t border-gray-100 text-center">
+            <p className="text-sm text-gray-500 mb-2">Ainda não tem conta?</p>
             <button
-              onClick={() => setFirstAccess(true)}
-              className="text-sm text-agro-green hover:text-agro-dark font-medium underline underline-offset-2"
+              onClick={() => setSignUp(true)}
+              className="w-full border-2 border-agro-green text-agro-green hover:bg-agro-green hover:text-white font-semibold py-2.5 rounded-xl transition-colors"
             >
-              Primeiro acesso? Clique aqui para criar sua senha
+              Criar minha conta gratuitamente
             </button>
           </div>
 
-          <p className="text-center text-xs text-gray-400 mt-4">
-            Acesso exclusivo para produtores cadastrados no sistema NPL
-          </p>
+          {/* Primeiro acesso (clientes já cadastrados pela equipe) */}
+          <div className="mt-4 text-center">
+            <button
+              onClick={() => setFirstAccess(true)}
+              className="text-xs text-gray-400 hover:text-agro-green underline underline-offset-2"
+            >
+              Já é cliente NPL e ainda não tem senha? Primeiro acesso
+            </button>
+          </div>
         </div>
 
         <div className="text-center mt-6">

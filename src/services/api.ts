@@ -74,6 +74,13 @@ export const api = {
       body: JSON.stringify({ cpfCnpj, whatsapp, newPassword }),
     }),
 
+  /** Autocadastro público — qualquer interessado cria sua conta */
+  signup: (data: SignUpInput) =>
+    request<AuthResponse>('/api/producer/signup', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   changePassword: (currentPassword: string, newPassword: string) =>
     request('/api/producer/change-password', {
       method: 'POST',
@@ -193,6 +200,16 @@ export interface ProcessFields {
   vara: string | null
   comarca: string | null
   faseProcessual: string | null
+}
+
+export interface SignUpInput {
+  nome: string
+  cpfCnpj: string
+  whatsapp: string
+  password: string
+  email?: string
+  municipio?: string
+  uf?: string
 }
 
 export interface NewLeadInput {
