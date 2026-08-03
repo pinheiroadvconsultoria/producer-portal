@@ -8,8 +8,11 @@
 import { useEffect, useState } from 'react'
 import {
   Lock, Search, Gavel, Plus, Trash2, Save, RefreshCw, ChevronLeft, LogOut, ShieldCheck, AlertCircle,
+  UserPlus, X,
 } from 'lucide-react'
-import { adminApi, type AdminLeadSummary, type CaseType, type ProcessMovement, type ProducerData } from '../services/api'
+import {
+  adminApi, type AdminLeadSummary, type CaseType, type NewLeadInput, type ProcessMovement, type ProducerData,
+} from '../services/api'
 
 const SESSION_KEY = 'npl_admin_key'
 
@@ -35,6 +38,7 @@ export function AdminPage() {
   const [loadingLeads, setLoadingLeads] = useState(false)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<ProducerData | null>(null)
+  const [creating, setCreating] = useState(false)
 
   async function tryLogin(key: string) {
     setChecking(true)
@@ -148,6 +152,12 @@ export function AdminPage() {
       <main className="max-w-5xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
         {/* Lista de produtores */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 h-fit">
+          <button
+            onClick={() => { setCreating(true); setSelected(null) }}
+            className="w-full flex items-center justify-center gap-2 bg-agro-green hover:bg-agro-dark text-white text-sm font-semibold py-2.5 rounded-xl transition-colors mb-3"
+          >
+            <UserPlus className="w-4 h-4" />Cadastrar produtor
+          </button>
           <div className="flex items-center gap-2 mb-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
@@ -166,7 +176,7 @@ export function AdminPage() {
             {filtered.map(l => (
               <button
                 key={l.id}
-                onClick={() => openLead(l.id)}
+                onClick={() => { setCreating(false); openLead(l.id) }}
                 className={`w-full text-left px-3 py-2.5 rounded-xl transition-colors ${
                   selected?.id === l.id ? 'bg-agro-green text-white' : 'hover:bg-agro-cream'
                 }`}
@@ -188,8 +198,18 @@ export function AdminPage() {
           </div>
         </div>
 
-        {/* Detalhe / edição */}
-        {selected ? (
+        {/* Detalhe / edição / cadastro */}
+        {creating ? (
+          <NewLeadForm
+            adminKey={adminKey}
+            onCancel={() => setCreating(false)}
+            onCreated={async (lead) => {
+              setCreating(false)
+              await refreshLeads()
+              openLead(lead.id)
+            }}
+          />
+        ) : selected ? (
           <LeadEditor
             key={selected.id}
             lead={selected}
@@ -198,10 +218,117 @@ export function AdminPage() {
           />
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center text-gray-400">
-            Selecione um produtor na lista para editar o processo judicial e as movimentações.
+            Selecione um produtor na lista para editar o processo judicial e as movimentações,
+            ou cadastre um novo produtor.
           </div>
         )}
       </main>
+    </div>
+  )
+}
+
+function NewLeadForm({
+  adminKey, onCancel, onCreated,
+}: { adminKey: string; onCancel: () => void; onCreated: (lead: ProducerData) => void }) {
+  const [form, setForm] = useState<NewLeadInput>({
+    nome: '', cpfCnpj: '', whatsapp: '', email: '', municipio: '', uf: '', linhaCredito: '', valorCredito: 0,
+  })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const set = (k: keyof NewLeadInput) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm({ ...form, [k]: k === 'valorCredito' ? Number(e.target.value) || 0 : e.target.value })
+
+  const digits = (v: string) => v.replace(/\D/g, '')
+  const canSubmit = form.nome.trim() && digits(form.cpfCnpj).length >= 11 && digits(form.whatsapp).length >= 10
+
+  async function submit() {
+    if (!canSubmit) return
+    setSaving(true)
+    setError(null)
+    try {
+      const res = await adminApi.createLead(adminKey, form)
+      onCreated(res.data)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Erro ao cadastrar produtor')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="font-bold text-gray-800 flex items-center gap-2">
+          <UserPlus className="w-4 h-4 text-agro-green" />Cadastrar produtor
+        </h2>
+        <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-gray-50 text-gray-400">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+      <p className="text-xs text-gray-400 mb-4">
+        Após o cadastro, o produtor faz o <strong>primeiro acesso</strong> no portal usando o CPF/CNPJ e o WhatsApp informados aqui.
+      </p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="sm:col-span-2">
+          <label className="block text-xs font-medium text-gray-600 mb-1">Nome completo *</label>
+          <input value={form.nome} onChange={set('nome')} placeholder="Nome do produtor"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-agro-green" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">CPF ou CNPJ *</label>
+          <input value={form.cpfCnpj} onChange={set('cpfCnpj')} placeholder="000.000.000-00"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-agro-green" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">WhatsApp (com DDD) *</label>
+          <input value={form.whatsapp} onChange={set('whatsapp')} placeholder="(91) 98888-7777"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-agro-green" />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="block text-xs font-medium text-gray-600 mb-1">E-mail</label>
+          <input value={form.email} onChange={set('email')} placeholder="produtor@email.com"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-agro-green" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Município</label>
+          <input value={form.municipio} onChange={set('municipio')} placeholder="Ex.: Belém"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-agro-green" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">UF</label>
+          <input value={form.uf} onChange={set('uf')} placeholder="PA" maxLength={2}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-agro-green uppercase" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Linha de crédito</label>
+          <input value={form.linhaCredito} onChange={set('linhaCredito')} placeholder="Ex.: Pronaf"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-agro-green" />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Valor pleiteado (R$)</label>
+          <input type="number" value={form.valorCredito || ''} onChange={set('valorCredito')} placeholder="250000"
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-agro-green" />
+        </div>
+      </div>
+
+      {error && (
+        <div className="flex items-start gap-2 bg-red-50 text-red-700 rounded-xl px-3 py-2 text-xs mt-3">
+          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />{error}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 mt-4">
+        <button
+          onClick={submit}
+          disabled={saving || !canSubmit}
+          className="inline-flex items-center gap-2 bg-agro-green hover:bg-agro-dark text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors disabled:opacity-50"
+        >
+          <Save className="w-3.5 h-3.5" />{saving ? 'Cadastrando...' : 'Cadastrar produtor'}
+        </button>
+        <button onClick={onCancel} className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2">Cancelar</button>
+      </div>
     </div>
   )
 }

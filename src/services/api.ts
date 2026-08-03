@@ -109,6 +109,12 @@ async function adminRequest<T>(adminKey: string, path: string, opts: RequestInit
 export const adminApi = {
   listLeads: (key: string) => adminRequest<{ data: AdminLeadSummary[] }>(key, '/api/admin/leads'),
 
+  createLead: (key: string, lead: NewLeadInput) =>
+    adminRequest<{ data: ProducerData }>(key, '/api/admin/leads', {
+      method: 'POST',
+      body: JSON.stringify(lead),
+    }),
+
   getLead: (key: string, id: string) => adminRequest<{ data: ProducerData }>(key, `/api/admin/leads/${id}`),
 
   updateProcess: (key: string, id: string, patch: Partial<ProcessFields>) =>
@@ -187,6 +193,17 @@ export interface ProcessFields {
   vara: string | null
   comarca: string | null
   faseProcessual: string | null
+}
+
+export interface NewLeadInput {
+  nome: string
+  cpfCnpj: string
+  whatsapp: string
+  email?: string
+  municipio?: string
+  uf?: string
+  linhaCredito?: string
+  valorCredito?: number
 }
 
 export interface AdminLeadSummary {
