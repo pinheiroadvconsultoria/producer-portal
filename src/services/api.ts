@@ -135,6 +135,105 @@ export const adminApi = {
 
   deleteMovement: (key: string, movementId: string) =>
     adminRequest(key, `/api/admin/movements/${movementId}`, { method: 'DELETE' }),
+
+  // ── Triagem do Eduardo ──────────────────────────────────────────────────────
+  dashboard: (key: string) => adminRequest<{ data: AdminDashboard }>(key, '/api/admin/dashboard'),
+
+  listAssessments: (key: string, status?: AssessmentStatus) =>
+    adminRequest<{ data: Assessment[] }>(key, `/api/admin/assessments${status ? `?status=${status}` : ''}`),
+
+  decideAssessment: (key: string, id: string, decision: 'aprovada' | 'recusada') =>
+    adminRequest(key, `/api/admin/assessments/${id}/decide`, {
+      method: 'POST',
+      body: JSON.stringify({ decision }),
+    }),
+
+  listConsultations: (key: string, status?: ConsultationStatus) =>
+    adminRequest<{ data: Consultation[] }>(key, `/api/admin/consultations${status ? `?status=${status}` : ''}`),
+
+  updateConsultation: (key: string, id: string, patch: { scheduledAt?: string; status?: ConsultationStatus; observacao?: string }) =>
+    adminRequest(key, `/api/admin/consultations/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+
+  listDocPackages: (key: string, status?: DocPackageStatus) =>
+    adminRequest<{ data: DocPackage[] }>(key, `/api/admin/document-packages${status ? `?status=${status}` : ''}`),
+
+  updateDocPackage: (key: string, id: string, patch: { honorariosTipo?: string; honorariosTexto?: string; observacao?: string }) =>
+    adminRequest(key, `/api/admin/document-packages/${id}`, { method: 'PATCH', body: JSON.stringify(patch) }),
+
+  sendDocPackage: (key: string, id: string) =>
+    adminRequest<{ signUrl: string | null }>(key, `/api/admin/document-packages/${id}/send`, { method: 'POST' }),
+
+  /** URL do preview em PDF — abre em nova aba (inclui a chave para autenticar) */
+  docPackagePreviewUrl: (id: string) => `/api/admin/document-packages/${id}/preview`,
+}
+
+// ── Tipos da triagem ─────────────────────────────────────────────────────────
+
+export type PracticeArea = 'agronegocio' | 'trabalhista' | 'outro'
+export type CaseViability = 'promissora' | 'requer_analise' | 'inviavel'
+export type InterestLevel = 'alto' | 'medio' | 'baixo'
+export type AssessmentStatus = 'aguardando_advogado' | 'aprovada' | 'recusada'
+export type ConsultationStatus = 'solicitada' | 'confirmada' | 'realizada' | 'cancelada'
+export type DocPackageStatus = 'rascunho' | 'aprovado' | 'enviado' | 'assinado' | 'cancelado'
+export type DocKind = 'procuracao' | 'hipossuficiencia' | 'honorarios'
+
+export interface LeadResumo {
+  id: string
+  nome: string
+  whatsapp: string
+  cpfCnpj?: string | null
+  municipio?: string
+  uf?: string
+  email?: string
+}
+
+export interface Assessment {
+  id: string
+  area: PracticeArea
+  viability: CaseViability
+  interest: InterestLevel
+  status: AssessmentStatus
+  resumo: string
+  fundamentos?: string | null
+  pendencias?: string | null
+  createdAt: string
+  lead: LeadResumo
+  consultations?: Consultation[]
+  documents?: DocPackage[]
+}
+
+export interface Consultation {
+  id: string
+  area: PracticeArea
+  preferencia: string
+  scheduledAt?: string | null
+  status: ConsultationStatus
+  observacao?: string | null
+  createdAt: string
+  lead?: LeadResumo
+}
+
+export interface DocPackage {
+  id: string
+  area: PracticeArea
+  kinds: DocKind[]
+  status: DocPackageStatus
+  honorariosTipo?: string | null
+  honorariosTexto?: string | null
+  observacao?: string | null
+  signUrl?: string | null
+  sentAt?: string | null
+  signedAt?: string | null
+  createdAt: string
+  lead?: LeadResumo
+}
+
+export interface AdminDashboard {
+  triagensPendentes: number
+  consultasSolicitadas: number
+  docsRascunho: number
+  docsEnviados: number
+  leadsTotal: number
 }
 
 export interface ChatMessage {

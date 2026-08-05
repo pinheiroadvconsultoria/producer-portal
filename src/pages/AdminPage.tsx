@@ -13,6 +13,9 @@ import {
 import {
   adminApi, type AdminLeadSummary, type CaseType, type NewLeadInput, type ProcessMovement, type ProducerData,
 } from '../services/api'
+import { TriagePanel } from '../components/TriagePanel'
+
+type Section = 'triagem' | 'clientes'
 
 const SESSION_KEY = 'npl_admin_key'
 
@@ -39,6 +42,7 @@ export function AdminPage() {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<ProducerData | null>(null)
   const [creating, setCreating] = useState(false)
+  const [section, setSection] = useState<Section>('triagem')
 
   async function tryLogin(key: string) {
     setChecking(true)
@@ -147,8 +151,29 @@ export function AdminPage() {
             <LogOut className="w-3.5 h-3.5" />Sair
           </button>
         </div>
+        <div className="max-w-5xl mx-auto px-4 flex border-t border-white/10">
+          {([
+            { key: 'triagem', label: 'Atendimento do Eduardo' },
+            { key: 'clientes', label: 'Clientes e processos' },
+          ] as const).map(s => (
+            <button
+              key={s.key}
+              onClick={() => setSection(s.key)}
+              className={`px-1 py-3 mr-6 text-xs font-semibold border-b-2 transition-colors ${
+                section === s.key ? 'text-agro-lime border-agro-lime' : 'text-white/50 border-transparent hover:text-white/80'
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
       </header>
 
+      {section === 'triagem' ? (
+        <main className="max-w-5xl mx-auto px-4 py-6">
+          <TriagePanel adminKey={adminKey} />
+        </main>
+      ) : (
       <main className="max-w-5xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
         {/* Lista de produtores */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 h-fit">
@@ -223,6 +248,7 @@ export function AdminPage() {
           </div>
         )}
       </main>
+      )}
     </div>
   )
 }
