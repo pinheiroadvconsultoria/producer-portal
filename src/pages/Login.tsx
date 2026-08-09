@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Sprout, FileText, Lock, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, Loader2, AlertCircle, ShieldCheck } from 'lucide-react'
 import { api } from '../services/api'
 import { usePortalStore } from '../store/usePortalStore'
 import { FirstAccess } from './FirstAccess'
@@ -15,6 +15,79 @@ function maskDoc(v: string) {
   }
   if (d.length <= 12) return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8)}`
   return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12)}`
+}
+
+/**
+ * Marca do portal: a muda (broto) — mesma identidade dos ícones do PWA.
+ * Desenhada em SVG (e não no PNG de 192px) para ficar nítida no tamanho grande
+ * do login e acompanhar a cor do texto.
+ */
+function LogoMuda({ className = '', style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg viewBox="0 0 96 96" className={className} style={style} fill="none" aria-hidden="true">
+      {/* caule */}
+      <path
+        d="M48 82V38"
+        stroke="currentColor"
+        strokeWidth="5.5"
+        strokeLinecap="round"
+      />
+      {/* folha direita */}
+      <path
+        d="M49.5 47c1-13 10.5-22.5 25.5-24.5 1 15.5-9 26-25.5 27.5z"
+        fill="currentColor"
+      />
+      {/* folha esquerda */}
+      <path
+        d="M46.5 58c-1-13-10.5-22.5-25.5-24.5-1 15.5 9 26 25.5 27.5z"
+        fill="currentColor"
+        fillOpacity="0.88"
+      />
+      {/* solo */}
+      <path
+        d="M31 82h34"
+        stroke="currentColor"
+        strokeWidth="5.5"
+        strokeLinecap="round"
+        strokeOpacity="0.8"
+      />
+    </svg>
+  )
+}
+
+/**
+ * A muda em 3D girando. Cada camada é o mesmo SVG deslocado no eixo Z:
+ * as das pontas ficam brancas (as faces) e as do meio, verde-escuras
+ * (a espessura). O giro em si vive no CSS (.logo3d, em index.css).
+ */
+const CAMADAS = 11
+
+function LogoMuda3D() {
+  return (
+    <div className="logo3d h-16 w-16">
+      <div className="logo3d__spin">
+        {Array.from({ length: CAMADAS }, (_, i) => {
+          const t = i / (CAMADAS - 1)          // 0 (fundo) → 1 (frente)
+          const z = (t - 0.5) * 15             // -7.5px → +7.5px
+          const face = Math.abs(t - 0.5) * 2   // 0 no miolo, 1 nas duas faces
+          const mix = face ** 1.6              // escurece rápido para dentro
+          const c = (dark: number, light: number) =>
+            Math.round(dark + (light - dark) * mix)
+
+          return (
+            <LogoMuda
+              key={i}
+              className="logo3d__layer"
+              style={{
+                transform: `translateZ(${z.toFixed(2)}px)`,
+                color: `rgb(${c(34, 255)}, ${c(74, 255)}, ${c(55, 255)})`,
+              }}
+            />
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 export function Login() {
@@ -58,125 +131,150 @@ export function Login() {
     return <FirstAccess onBack={() => setFirstAccess(false)} />
   }
 
+  // Campo escuro translúcido: a borda e o brilho reagem ao foco (:focus-within)
+  const fieldWrap =
+    'group relative rounded-xl bg-white/[0.04] ring-1 ring-white/10 transition ' +
+    'hover:ring-white/20 focus-within:ring-2 focus-within:ring-agro-lime/70 ' +
+    'focus-within:bg-white/[0.07] focus-within:shadow-[0_0_0_4px_rgba(82,183,136,0.10)]'
+
+  const fieldInput =
+    'w-full bg-transparent px-4 py-3.5 text-white placeholder-white/25 ' +
+    'outline-none text-[15px] tracking-wide'
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-agro-dark via-agro-green to-agro-lime flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/10 backdrop-blur mb-4">
-            <Sprout className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-white">AgroCredit</h1>
-          <p className="text-agro-lime mt-1 font-medium">Portal do Produtor Rural</p>
-          <p className="text-white/60 text-sm mt-2">NPL Sociedade de Advogados</p>
-        </div>
+    <div className="relative min-h-screen overflow-hidden bg-[#0b2417] flex items-center justify-center px-5 py-12">
+      {/* Halo verde ao fundo — dá profundidade sem competir com o formulário */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(75% 50% at 50% -5%, #1d5738 0%, transparent 62%), ' +
+            'radial-gradient(65% 45% at 50% 105%, #12402a 0%, transparent 65%)',
+        }}
+      />
 
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-1">Acesse sua área</h2>
-          <p className="text-gray-500 text-sm mb-6">
-            Acompanhe o status do seu crédito rural
+      <div className="relative w-full max-w-[420px]">
+        {/* Marca */}
+        <div className="text-center">
+          <div className="mx-auto mb-7 flex h-28 w-28 items-center justify-center rounded-full bg-white/[0.04] ring-1 ring-white/10">
+            <LogoMuda3D />
+          </div>
+
+          <h1 className="text-[34px] leading-tight font-bold text-white">
+            Portal do Produtor
+          </h1>
+          <p className="mt-3 text-[13px] uppercase tracking-[0.22em] text-white/45">
+            Crédito rural e agronegócio
           </p>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* CPF/CNPJ */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                CPF ou CNPJ
-              </label>
-              <div className="relative">
-                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={doc}
-                  onChange={e => setDoc(maskDoc(e.target.value))}
-                  placeholder="000.000.000-00"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green focus:border-transparent text-gray-800"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Senha */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Senha
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Sua senha de acesso"
-                  className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green focus:border-transparent text-gray-800"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPass(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Error */}
-            {error && (
-              <div className="flex items-center gap-2 bg-red-50 text-red-700 rounded-xl px-4 py-3 text-sm">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-agro-green hover:bg-agro-dark text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
-            >
-              {loading ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Verificando...</>
-              ) : (
-                'Acessar minha área'
-              )}
-            </button>
-          </form>
-
-          {/* Criar conta — autocadastro aberto */}
-          <div className="mt-5 pt-5 border-t border-gray-100 text-center">
-            <p className="text-sm text-gray-500 mb-2">Ainda não tem conta?</p>
-            <button
-              onClick={() => setSignUp(true)}
-              className="w-full border-2 border-agro-green text-agro-green hover:bg-agro-green hover:text-white font-semibold py-2.5 rounded-xl transition-colors"
-            >
-              Criar minha conta gratuitamente
-            </button>
-          </div>
-
-          {/* Primeiro acesso (clientes já cadastrados pela equipe) */}
-          <div className="mt-4 text-center">
-            <button
-              onClick={() => setFirstAccess(true)}
-              className="text-xs text-gray-400 hover:text-agro-green underline underline-offset-2"
-            >
-              Já é cliente NPL e ainda não tem senha? Primeiro acesso
-            </button>
-          </div>
         </div>
 
-        <div className="text-center mt-6">
+        {/* Formulário */}
+        <form onSubmit={handleSubmit} className="mt-10 space-y-5">
+          <div>
+            <label htmlFor="doc" className="mb-2 block text-sm font-medium text-white/85">
+              CPF ou CNPJ
+            </label>
+            <div className={fieldWrap}>
+              <input
+                id="doc"
+                type="text"
+                inputMode="numeric"
+                autoComplete="username"
+                value={doc}
+                onChange={e => setDoc(maskDoc(e.target.value))}
+                placeholder="000.000.000-00"
+                className={fieldInput}
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="senha" className="mb-2 block text-sm font-medium text-white/85">
+              Senha
+            </label>
+            <div className={fieldWrap}>
+              <input
+                id="senha"
+                type={showPass ? 'text' : 'password'}
+                autoComplete="current-password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className={`${fieldInput} pr-12`}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(v => !v)}
+                aria-label={showPass ? 'Ocultar senha' : 'Mostrar senha'}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-white/40 transition hover:bg-white/10 hover:text-white"
+              >
+                {showPass ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div className="flex items-start gap-2.5 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-200 ring-1 ring-red-500/25">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-agro-green to-[#1f5138] py-4 text-[15px] font-semibold text-white ring-1 ring-white/10 transition hover:from-agro-lime hover:to-agro-green hover:ring-white/20 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? (
+              <><Loader2 className="h-4 w-4 animate-spin" /> Verificando…</>
+            ) : (
+              'Entrar'
+            )}
+          </button>
+        </form>
+
+        {/* Ações secundárias */}
+        <div className="mt-7 text-center">
+          <button
+            onClick={() => setSignUp(true)}
+            className="text-[15px] font-medium text-white/85 underline-offset-4 transition hover:text-white hover:underline"
+          >
+            Criar minha conta
+          </button>
+        </div>
+
+        <div className="mt-3 text-center">
+          <button
+            onClick={() => setFirstAccess(true)}
+            className="text-[13px] text-white/40 underline-offset-4 transition hover:text-white/70 hover:underline"
+          >
+            Ainda não tenho senha — primeiro acesso
+          </button>
+        </div>
+
+        {/* Rodapé */}
+        <div className="mt-12 flex items-center justify-center gap-2 text-[12px] text-white/35">
+          <ShieldCheck className="h-3.5 w-3.5" />
+          <span>Conexão protegida por criptografia</span>
+        </div>
+
+        <div className="mt-4 text-center">
           <button
             onClick={() => {
               window.history.pushState(null, '', '/download')
               window.dispatchEvent(new PopStateEvent('popstate'))
             }}
-            className="text-sm text-white/70 hover:text-white font-medium underline underline-offset-2"
+            className="text-[12px] text-white/30 underline-offset-4 transition hover:text-white/60 hover:underline"
           >
             Instalar aplicativo no Chrome
           </button>
         </div>
+
+        <p className="mt-8 text-center text-[11px] uppercase tracking-[0.18em] text-white/20">
+          Portal do Produtor © {new Date().getFullYear()}
+        </p>
       </div>
     </div>
   )

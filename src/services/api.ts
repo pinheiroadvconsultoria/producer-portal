@@ -1,4 +1,4 @@
-const DIRECT = import.meta.env.VITE_API_URL || 'https://agrocredit-api-txbj.onrender.com'
+const DIRECT = import.meta.env.VITE_API_URL || 'https://agrocredit-api-ix49.onrender.com'
 
 /**
  * Dois caminhos até o backend, tentados em sequência:

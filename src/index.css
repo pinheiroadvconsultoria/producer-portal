@@ -11,3 +11,46 @@
   }
   #root { min-height: 100svh; }
 }
+
+/*
+ * Logo 3D da muda — gira continuamente no eixo Y, como o logo do portal NPL.
+ *
+ * O NPL usa Three.js/WebGL. Aqui a volumetria é feita empilhando cópias do
+ * mesmo SVG em translateZ diferentes: as das pontas são claras (as duas faces)
+ * e as do meio, escuras (a "espessura"). De frente parece um símbolo chapado;
+ * de perfil, um objeto sólido. Custa zero dependência e roda na GPU.
+ */
+@layer components {
+  .logo3d {
+    perspective: 620px;
+  }
+
+  .logo3d__spin {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    will-change: transform;
+    animation: logo3d-girar 12s linear infinite;
+  }
+
+  .logo3d__layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  @keyframes logo3d-girar {
+    from { transform: rotateX(8deg) rotateY(0deg); }
+    to   { transform: rotateX(8deg) rotateY(360deg); }
+  }
+
+  /* Quem pediu menos movimento no sistema vê o logo parado, levemente virado. */
+  @media (prefers-reduced-motion: reduce) {
+    .logo3d__spin {
+      animation: none;
+      transform: rotateX(8deg) rotateY(-18deg);
+    }
+  }
+}
