@@ -14,8 +14,9 @@ import {
   adminApi, type AdminLeadSummary, type CaseType, type NewLeadInput, type ProcessMovement, type ProducerData,
 } from '../services/api'
 import { TriagePanel } from '../components/TriagePanel'
+import { SubscriptionsPanel } from '../components/SubscriptionsPanel'
 
-type Section = 'triagem' | 'clientes'
+type Section = 'triagem' | 'clientes' | 'assinaturas'
 
 const SESSION_KEY = 'npl_admin_key'
 
@@ -155,6 +156,7 @@ export function AdminPage() {
           {([
             { key: 'triagem', label: 'Atendimento do Eduardo' },
             { key: 'clientes', label: 'Clientes e processos' },
+            { key: 'assinaturas', label: 'Assinaturas FAZEND.AI' },
           ] as const).map(s => (
             <button
               key={s.key}
@@ -172,6 +174,10 @@ export function AdminPage() {
       {section === 'triagem' ? (
         <main className="max-w-5xl mx-auto px-4 py-6">
           <TriagePanel adminKey={adminKey} />
+        </main>
+      ) : section === 'assinaturas' ? (
+        <main className="max-w-5xl mx-auto px-4 py-6">
+          <SubscriptionsPanel adminKey={adminKey} />
         </main>
       ) : (
       <main className="max-w-5xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">

@@ -168,6 +168,57 @@ export const adminApi = {
 
   /** URL do preview em PDF — abre em nova aba (inclui a chave para autenticar) */
   docPackagePreviewUrl: (id: string) => `/api/admin/document-packages/${id}/preview`,
+
+  // ── SaaS FAZEND.AI ──────────────────────────────────────────────────────────
+  listSubscriptions: (key: string) =>
+    adminRequest<{ data: SubscriberRow[]; trialDays: number }>(key, '/api/admin/fazendai/subscriptions'),
+
+  updateSubscription: (
+    key: string,
+    leadId: string,
+    patch: { status?: SubStatus; paidUntil?: string | null; trialEndsAt?: string; obs?: string },
+  ) =>
+    adminRequest<{ data: SubscriptionData }>(key, `/api/admin/fazendai/subscriptions/${leadId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    }),
+}
+
+// ── Tipos do SaaS FAZEND.AI ──────────────────────────────────────────────────
+
+export type SubStatus = 'trial' | 'ativa' | 'suspensa' | 'cortesia'
+
+export interface SubscriptionAccess {
+  allowed: boolean
+  reason: string
+  until: string | null
+}
+
+export interface SubscriptionData {
+  id: string
+  leadId: string
+  status: SubStatus
+  trialEndsAt: string
+  paidUntil: string | null
+  gateway: string | null
+  obs: string | null
+  access: SubscriptionAccess
+}
+
+export interface SubscriberRow {
+  id: string
+  nome: string
+  cpfCnpj: string | null
+  whatsapp: string
+  email: string | null
+  municipio: string
+  uf: string
+  createdAt: string
+  portalBloqueado: boolean
+  temSenha: boolean
+  fazendas: number
+  solicitacoesCredito: number
+  subscription: SubscriptionData | null
 }
 
 // ── Tipos da triagem ─────────────────────────────────────────────────────────
