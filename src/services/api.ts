@@ -127,6 +127,9 @@ export const adminApi = {
   updateProcess: (key: string, id: string, patch: Partial<ProcessFields>) =>
     adminRequest(key, `/api/admin/leads/${id}/process`, { method: 'PATCH', body: JSON.stringify(patch) }),
 
+  updateAccess: (key: string, id: string, portalBloqueado: boolean) =>
+    adminRequest(key, `/api/admin/leads/${id}/access`, { method: 'PATCH', body: JSON.stringify({ portalBloqueado }) }),
+
   addMovement: (key: string, id: string, m: { data: string; titulo: string; descricao?: string }) =>
     adminRequest<{ data: ProcessMovement }>(key, `/api/admin/leads/${id}/movements`, {
       method: 'POST',
@@ -334,6 +337,7 @@ export interface AdminLeadSummary {
   tipoAcao: CaseType | null
   numeroProcesso: string | null
   faseProcessual: string | null
+  portalBloqueado: boolean
   createdAt: string
 }
 
@@ -351,6 +355,7 @@ export interface ProducerData extends Partial<ProcessFields> {
   tipoProdutor?: string
   linhaCredito?: string
   valorCredito: number
+  portalBloqueado: boolean
   scoreNPL?: string
   scoreGlobal?: number
   nivelScore?: string

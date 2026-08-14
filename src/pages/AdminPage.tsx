@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from 'react'
 import {
-  Lock, Search, Gavel, Plus, Trash2, Save, RefreshCw, ChevronLeft, LogOut, ShieldCheck, AlertCircle,
+  Lock, Unlock, Search, Gavel, Plus, Trash2, Save, RefreshCw, ChevronLeft, LogOut, ShieldCheck, AlertCircle,
   UserPlus, X,
 } from 'lucide-react'
 import {
@@ -210,13 +210,22 @@ export function AdminPage() {
                 <p className={`text-[11px] ${selected?.id === l.id ? 'text-white/70' : 'text-gray-400'}`}>
                   {l.whatsapp} · {l.municipio}/{l.uf}
                 </p>
-                {l.temProcessoJudicial && (
-                  <span className={`inline-flex items-center gap-1 mt-1 text-[10px] font-medium ${
-                    selected?.id === l.id ? 'text-agro-lime' : 'text-agro-green'
-                  }`}>
-                    <Gavel className="w-3 h-3" />Processo judicial
-                  </span>
-                )}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {l.temProcessoJudicial && (
+                    <span className={`inline-flex items-center gap-1 mt-1 text-[10px] font-medium ${
+                      selected?.id === l.id ? 'text-agro-lime' : 'text-agro-green'
+                    }`}>
+                      <Gavel className="w-3 h-3" />Processo judicial
+                    </span>
+                  )}
+                  {l.portalBloqueado && (
+                    <span className={`inline-flex items-center gap-1 mt-1 text-[10px] font-medium ${
+                      selected?.id === l.id ? 'text-red-200' : 'text-red-600'
+                    }`}>
+                      <Lock className="w-3 h-3" />Bloqueado
+                    </span>
+                  )}
+                </div>
               </button>
             ))}
             {filtered.length === 0 && <p className="text-xs text-gray-400 text-center py-6">Nenhum produtor encontrado.</p>}
@@ -375,6 +384,21 @@ function LeadEditor({ lead, adminKey, onUpdated }: { lead: ProducerData; adminKe
   const [newDesc, setNewDesc] = useState('')
   const [addingMovement, setAddingMovement] = useState(false)
 
+  const [portalBloqueado, setPortalBloqueado] = useState(lead.portalBloqueado ?? false)
+  const [togglingAccess, setTogglingAccess] = useState(false)
+
+  async function toggleAccess() {
+    const next = !portalBloqueado
+    setTogglingAccess(true)
+    try {
+      await adminApi.updateAccess(adminKey, lead.id, next)
+      setPortalBloqueado(next)
+      onUpdated()
+    } finally {
+      setTogglingAccess(false)
+    }
+  }
+
   async function saveProcess() {
     setSaving(true)
     setSaved(false)
@@ -430,6 +454,39 @@ function LeadEditor({ lead, adminKey, onUpdated }: { lead: ProducerData; adminKe
           </label>
         </div>
         <p className="text-xs text-gray-400 mb-4">{lead.cpfCnpj} · {lead.whatsapp}</p>
+
+        <div className={`flex items-center justify-between gap-3 rounded-xl px-4 py-3 mb-4 ${
+          portalBloqueado ? 'bg-red-50' : 'bg-agro-cream'
+        }`}>
+          <div className="flex items-center gap-2">
+            {portalBloqueado ? (
+              <Lock className="w-4 h-4 text-red-600 flex-shrink-0" />
+            ) : (
+              <Unlock className="w-4 h-4 text-agro-green flex-shrink-0" />
+            )}
+            <div>
+              <p className={`text-sm font-semibold ${portalBloqueado ? 'text-red-700' : 'text-gray-800'}`}>
+                {portalBloqueado ? 'Acesso ao portal bloqueado' : 'Acesso ao portal liberado'}
+              </p>
+              <p className="text-[11px] text-gray-500">
+                {portalBloqueado
+                  ? 'O produtor não consegue mais entrar, mesmo com a senha correta.'
+                  : 'O produtor consegue entrar normalmente no portal.'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={toggleAccess}
+            disabled={togglingAccess}
+            className={`flex-shrink-0 text-xs font-semibold px-3 py-2 rounded-lg transition-colors disabled:opacity-60 ${
+              portalBloqueado
+                ? 'bg-agro-green hover:bg-agro-dark text-white'
+                : 'bg-red-600 hover:bg-red-700 text-white'
+            }`}
+          >
+            {togglingAccess ? 'Aguarde...' : portalBloqueado ? 'Liberar acesso' : 'Bloquear acesso'}
+          </button>
+        </div>
 
         {temProcessoJudicial && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
