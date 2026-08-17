@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
-import { RefreshCw, Search, Sprout, CheckCircle2, XCircle, Clock, Gift } from 'lucide-react'
-import { adminApi, type SubscriberRow, type SubStatus } from '../services/api'
+import {
+  RefreshCw, Search, Sprout, CheckCircle2, XCircle, Clock, Gift, Landmark,
+  FileText, ShieldAlert, ShieldCheck, Lock, Unlock,
+} from 'lucide-react'
+import { adminApi, type SubscriberRow, type SubStatus, type UserDetail } from '../services/api'
 
 /**
- * Painel SaaS do FAZEND.AI — base única de cadastrados (Portal + FAZEND.AI)
- * com a situação da assinatura de cada um. A suspensão por atraso é
- * automática (avaliada a cada request no backend); aqui o advogado define
- * status e datas. subscription = null → nunca abriu o FAZEND.AI.
+ * Painel de usuários do FAZEND.AI (SaaS) — base única de cadastrados
+ * (Portal + FAZEND.AI), com uso da plataforma e situação da assinatura.
+ * A suspensão por atraso é automática (avaliada a cada request no
+ * backend); aqui o advogado gerencia status, datas e bloqueio de conta.
+ * subscription = null → nunca abriu o FAZEND.AI.
  */
 
 const STATUS_LABEL: Record<SubStatus, string> = {
@@ -16,8 +20,27 @@ const STATUS_LABEL: Record<SubStatus, string> = {
   cortesia: 'Cortesia',
 }
 
+const CLASSIFICATION_LABEL: Record<string, string> = {
+  verde: '🟢 Verde',
+  amarelo: '🟡 Amarelo',
+  vermelho: '🔴 Vermelho',
+}
+
+const DOC_STATUS_LABEL: Record<string, string> = {
+  validado: 'Validados',
+  pendente: 'Pendentes',
+  ausente: 'Ausentes',
+  vencido: 'Vencidos',
+  ilegivel: 'Ilegíveis',
+  em_analise: 'Em análise',
+  regularizacao_necessaria: 'Regularização',
+}
+
 const fmt = (d: string | null | undefined) =>
   d ? new Date(d).toLocaleDateString('pt-BR') : '—'
+
+const brl = (v: number | null | undefined) =>
+  v == null ? '—' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
 function AccessBadge({ row }: { row: SubscriberRow }) {
   const sub = row.subscription
@@ -173,7 +196,12 @@ export function SubscriptionsPanel({ adminKey }: { adminKey: string }) {
               {filtered.map((r) => (
                 <tr key={r.id} className="border-b border-gray-50 hover:bg-gray-50/60">
                   <td className="py-2.5 pr-3">
-                    <p className="font-medium text-gray-800">{r.nome}</p>
+                    <p className="font-medium text-gray-800 flex items-center gap-1.5">
+                      {r.nome}
+                      {r.portalBloqueado && (
+                        <span title="Conta bloqueada"><Lock className="h-3 w-3 text-red-500" /></span>
+                      )}
+                    </p>
                     <p className="text-[11px] text-gray-400">{r.cpfCnpj || 'sem CPF/CNPJ'}</p>
                   </td>
                   <td className="py-2.5 pr-3 text-xs text-gray-500">
@@ -193,7 +221,7 @@ export function SubscriptionsPanel({ adminKey }: { adminKey: string }) {
                       onClick={() => setEditing(r)}
                       className="text-xs font-semibold text-agro-green hover:underline"
                     >
-                      Gerenciar
+                      Ver / gerenciar
                     </button>
                   </td>
                 </tr>
@@ -211,7 +239,7 @@ export function SubscriptionsPanel({ adminKey }: { adminKey: string }) {
       </div>
 
       {editing && (
-        <EditModal
+        <UserDetailModal
           row={editing}
           adminKey={adminKey}
           onClose={() => setEditing(null)}
@@ -222,9 +250,14 @@ export function SubscriptionsPanel({ adminKey }: { adminKey: string }) {
   )
 }
 
-function EditModal({
+function UserDetailModal({
   row, adminKey, onClose, onSaved,
 }: { row: SubscriberRow; adminKey: string; onClose: () => void; onSaved: () => void }) {
+  const [detail, setDetail] = useState<UserDetail | null>(null)
+  const [loadingDetail, setLoadingDetail] = useState(true)
+  const [detailError, setDetailError] = useState<string | null>(null)
+  const [blockBusy, setBlockBusy] = useState(false)
+
   const sub = row.subscription
   const toInputDate = (d: string | null | undefined) => (d ? d.slice(0, 10) : '')
 
@@ -234,6 +267,34 @@ function EditModal({
   const [obs, setObs] = useState(sub?.obs || '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  async function loadDetail() {
+    setLoadingDetail(true)
+    setDetailError(null)
+    try {
+      const res = await adminApi.getUserDetail(adminKey, row.id)
+      setDetail(res.data)
+    } catch (e) {
+      setDetailError(e instanceof Error ? e.message : 'Falha ao carregar detalhes')
+    } finally {
+      setLoadingDetail(false)
+    }
+  }
+
+  useEffect(() => { loadDetail() /* eslint-disable-line react-hooks/exhaustive-deps */ }, [])
+
+  async function toggleBlock() {
+    if (!detail) return
+    setBlockBusy(true)
+    try {
+      await adminApi.updateAccess(adminKey, detail.id, !detail.portalBloqueado)
+      setDetail((d) => (d ? { ...d, portalBloqueado: !d.portalBloqueado } : d))
+    } catch (e) {
+      setDetailError(e instanceof Error ? e.message : 'Falha ao alterar bloqueio')
+    } finally {
+      setBlockBusy(false)
+    }
+  }
 
   async function save() {
     setSaving(true)
@@ -257,12 +318,117 @@ function EditModal({
   return (
     <div className="fixed inset-0 z-40 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="font-bold text-gray-800">{row.nome}</h3>
-        <p className="text-xs text-gray-400 mb-4">{row.cpfCnpj || 'sem CPF/CNPJ'} · {row.whatsapp}</p>
+        <div className="flex items-start justify-between mb-1">
+          <div>
+            <h3 className="font-bold text-gray-800">{row.nome}</h3>
+            <p className="text-xs text-gray-400">
+              {row.cpfCnpj || 'sem CPF/CNPJ'} · {row.whatsapp} · {row.municipio}/{row.uf}
+            </p>
+          </div>
+          <button
+            onClick={toggleBlock}
+            disabled={!detail || blockBusy}
+            title={detail?.portalBloqueado ? 'Desbloquear conta (portal e FAZEND.AI)' : 'Bloquear conta (portal e FAZEND.AI)'}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors disabled:opacity-50 ${
+              detail?.portalBloqueado
+                ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+            }`}
+          >
+            {detail?.portalBloqueado ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+            {detail?.portalBloqueado ? 'Desbloquear conta' : 'Bloquear conta'}
+          </button>
+        </div>
+        {detail?.portalBloqueado && (
+          <p className="mb-3 flex items-center gap-1.5 text-xs text-red-600">
+            <ShieldAlert className="h-3.5 w-3.5" />
+            Conta bloqueada — sem acesso ao Portal do Produtor NEM ao FAZEND.AI.
+          </p>
+        )}
 
+        {detailError && <p className="text-xs text-red-600 mb-3">{detailError}</p>}
+
+        {loadingDetail ? (
+          <p className="text-sm text-gray-400 py-6 text-center">Carregando detalhes...</p>
+        ) : detail && (
+          <div className="space-y-4 mb-5">
+            {/* Fazendas */}
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-1.5">
+                <Sprout className="h-3.5 w-3.5" /> Fazendas ({detail.properties.length})
+              </h4>
+              {detail.properties.length === 0 ? (
+                <p className="text-xs text-gray-400">Nenhuma fazenda cadastrada.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {detail.properties.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2 text-xs">
+                      <div>
+                        <span className="font-medium text-gray-700">{p.nome}</span>
+                        <span className="text-gray-400"> · {p.municipio}/{p.uf}</span>
+                        {p.isActive && <span className="ml-1.5 text-agro-green">(ativa)</span>}
+                      </div>
+                      <span className="text-gray-400">
+                        {p.areaTotal ? `${p.areaTotal} ha` : '—'} · {p._count.documents} docs · {p._count.creditRequests} créd.
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Solicitações de crédito */}
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-1.5">
+                <Landmark className="h-3.5 w-3.5" /> Solicitações de crédito ({detail.creditRequests.length})
+              </h4>
+              {detail.creditRequests.length === 0 ? (
+                <p className="text-xs text-gray-400">Nenhuma solicitação.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {detail.creditRequests.map((c) => (
+                    <div key={c.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2 text-xs">
+                      <div>
+                        <span className="font-medium text-gray-700">{c.program}</span>
+                        <span className="text-gray-400"> · {c.property?.nome || 'sem fazenda'} · {brl(c.valorPretendido)}</span>
+                      </div>
+                      <span>
+                        {c.classification ? CLASSIFICATION_LABEL[c.classification] : 'sem análise'}
+                        {c.score != null && <span className="text-gray-400"> ({c.score})</span>}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Documentos */}
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5" /> Documentos ({detail.documentsTotal})
+              </h4>
+              {detail.documentsTotal === 0 ? (
+                <p className="text-xs text-gray-400">Nenhum documento enviado.</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(detail.documentsByStatus).map(([status, n]) => (
+                    <span key={status} className="bg-gray-50 rounded-full px-2.5 py-1 text-[11px] text-gray-600">
+                      {DOC_STATUS_LABEL[status] || status}: <strong>{n}</strong>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Assinatura FAZEND.AI */}
+        <h4 className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-1.5">
+          <ShieldCheck className="h-3.5 w-3.5" /> Assinatura FAZEND.AI
+        </h4>
         <div className="space-y-3">
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1">Situação</label>
@@ -316,8 +482,9 @@ function EditModal({
           </div>
 
           <p className="text-[11px] text-gray-400">
-            "Ativa" exige uma data em "Pago até" — vencendo a data, o acesso é suspenso
-            automaticamente. "Cortesia" libera sem cobrança; "Suspensa" bloqueia na hora.
+            "Ativa" exige uma data em "Pago até" — vencendo a data, o acesso ao FAZEND.AI é suspenso
+            automaticamente (o Portal continua livre). "Cortesia" libera sem cobrança; "Suspensa" bloqueia
+            só o FAZEND.AI na hora — diferente do botão "Bloquear conta" acima, que bloqueia tudo.
           </p>
 
           {error && <p className="text-xs text-red-600">{error}</p>}
@@ -328,13 +495,13 @@ function EditModal({
               disabled={saving || (status === 'ativa' && !paidUntil)}
               className="flex-1 bg-agro-green hover:bg-agro-dark text-white font-semibold py-2.5 rounded-xl text-sm transition-colors disabled:opacity-50"
             >
-              {saving ? 'Salvando...' : 'Salvar'}
+              {saving ? 'Salvando...' : 'Salvar assinatura'}
             </button>
             <button
               onClick={onClose}
               className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-100"
             >
-              Cancelar
+              Fechar
             </button>
           </div>
         </div>

@@ -182,6 +182,9 @@ export const adminApi = {
       method: 'PATCH',
       body: JSON.stringify(patch),
     }),
+
+  getUserDetail: (key: string, leadId: string) =>
+    adminRequest<{ data: UserDetail }>(key, `/api/admin/fazendai/users/${leadId}`),
 }
 
 // ── Tipos do SaaS FAZEND.AI ──────────────────────────────────────────────────
@@ -219,6 +222,49 @@ export interface SubscriberRow {
   fazendas: number
   solicitacoesCredito: number
   subscription: SubscriptionData | null
+}
+
+export interface UserDetailProperty {
+  id: string
+  nome: string
+  municipio: string
+  uf: string
+  papel: string
+  areaTotal: number | null
+  areaProdutiva: number | null
+  atividade: string | null
+  isActive: boolean
+  createdAt: string
+  _count: { documents: number; creditRequests: number; ruralActivities: number }
+}
+
+export interface UserDetailCreditRequest {
+  id: string
+  program: string
+  finalidade: string
+  valorPretendido: number
+  classification: 'vermelho' | 'amarelo' | 'verde' | null
+  score: number | null
+  status: string
+  createdAt: string
+  property: { nome: string } | null
+}
+
+export interface UserDetail {
+  id: string
+  nome: string
+  cpfCnpj: string | null
+  whatsapp: string
+  email: string | null
+  municipio: string
+  uf: string
+  createdAt: string
+  portalBloqueado: boolean
+  subscription: SubscriptionData | null
+  properties: UserDetailProperty[]
+  creditRequests: UserDetailCreditRequest[]
+  documentsTotal: number
+  documentsByStatus: Record<string, number>
 }
 
 // ── Tipos da triagem ─────────────────────────────────────────────────────────
