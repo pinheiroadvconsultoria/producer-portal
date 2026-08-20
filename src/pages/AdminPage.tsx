@@ -1,13 +1,15 @@
 /**
  * AdminPage.tsx — Área administrativa (advogado do agronegócio / equipe NPL)
- * Acesso por chave compartilhada (não é o login do produtor).
+ * Login próprio da equipe (e-mail/senha, conta em AdminUser) — não é o login
+ * do produtor. A chave administrativa compartilhada (ADMIN_API_KEY) continua
+ * valendo como acesso de emergência no backend, sem tela própria aqui.
  * Permite cadastrar/editar o processo judicial de cada produtor e registrar
  * as movimentações processuais que aparecem no dashboard dele.
  */
 
 import { useEffect, useState } from 'react'
 import {
-  Lock, Unlock, Search, Gavel, Plus, Trash2, Save, RefreshCw, ChevronLeft, LogOut, ShieldCheck, AlertCircle,
+  Lock, Mail, Unlock, Search, Gavel, Plus, Trash2, Save, RefreshCw, ChevronLeft, LogOut, ShieldCheck, AlertCircle,
   UserPlus, X,
 } from 'lucide-react'
 import {
@@ -34,7 +36,8 @@ function goHome() {
 
 export function AdminPage() {
   const [adminKey, setAdminKey] = useState<string | null>(() => sessionStorage.getItem(SESSION_KEY))
-  const [keyInput, setKeyInput] = useState('')
+  const [email, setEmail] = useState('')
+  const [senha, setSenha] = useState('')
   const [authError, setAuthError] = useState<string | null>(null)
   const [checking, setChecking] = useState(false)
 
@@ -45,23 +48,38 @@ export function AdminPage() {
   const [creating, setCreating] = useState(false)
   const [section, setSection] = useState<Section>('triagem')
 
-  async function tryLogin(key: string) {
+  /** Usa um token (de sessão salva ou recém-emitido no login) pra carregar a lista. */
+  async function useToken(token: string) {
     setChecking(true)
     setAuthError(null)
     try {
-      const res = await adminApi.listLeads(key)
-      sessionStorage.setItem(SESSION_KEY, key)
-      setAdminKey(key)
+      const res = await adminApi.listLeads(token)
+      sessionStorage.setItem(SESSION_KEY, token)
+      setAdminKey(token)
       setLeads(res.data)
     } catch (e) {
-      setAuthError(e instanceof Error ? e.message : 'Chave inválida')
+      sessionStorage.removeItem(SESSION_KEY)
+      setAdminKey(null)
+      setAuthError(e instanceof Error ? e.message : 'Sessão inválida — entre novamente')
     } finally {
       setChecking(false)
     }
   }
 
+  async function doLogin() {
+    setChecking(true)
+    setAuthError(null)
+    try {
+      const res = await adminApi.login(email.trim(), senha)
+      await useToken(res.token)
+    } catch (e) {
+      setAuthError(e instanceof Error ? e.message : 'E-mail ou senha inválidos')
+      setChecking(false)
+    }
+  }
+
   useEffect(() => {
-    if (adminKey) tryLogin(adminKey)
+    if (adminKey) useToken(adminKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -102,16 +120,26 @@ export function AdminPage() {
               <h1 className="text-lg font-bold text-gray-800">Área Administrativa</h1>
             </div>
             <p className="text-xs text-gray-500 mb-5">Acesso restrito à equipe NPL — processos judiciais e crédito rural</p>
-            <form onSubmit={e => { e.preventDefault(); if (keyInput.trim()) tryLogin(keyInput.trim()) }} className="space-y-3">
+            <form onSubmit={e => { e.preventDefault(); if (email.trim() && senha) doLogin() }} className="space-y-3">
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="E-mail"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green text-gray-800"
+                  autoFocus
+                />
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="password"
-                  value={keyInput}
-                  onChange={e => setKeyInput(e.target.value)}
-                  placeholder="Chave administrativa"
+                  value={senha}
+                  onChange={e => setSenha(e.target.value)}
+                  placeholder="Senha"
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green text-gray-800"
-                  autoFocus
                 />
               </div>
               {authError && (
@@ -121,7 +149,7 @@ export function AdminPage() {
               )}
               <button
                 type="submit"
-                disabled={checking || !keyInput.trim()}
+                disabled={checking || !email.trim() || !senha}
                 className="w-full bg-agro-green hover:bg-agro-dark text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-60"
               >
                 {checking ? 'Verificando...' : 'Entrar'}

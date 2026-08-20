@@ -114,6 +114,13 @@ async function adminRequest<T>(adminKey: string, path: string, opts: RequestInit
 }
 
 export const adminApi = {
+  /** Login próprio da equipe NPL — retorna um token pra usar como "key" nas demais chamadas. */
+  login: (email: string, senha: string) =>
+    request<{ token: string; nome: string }>('/api/admin/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, senha }),
+    }),
+
   listLeads: (key: string) => adminRequest<{ data: AdminLeadSummary[] }>(key, '/api/admin/leads'),
 
   createLead: (key: string, lead: NewLeadInput) =>
