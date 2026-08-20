@@ -36,8 +36,12 @@ function goHome() {
 
 export function AdminPage() {
   const [adminKey, setAdminKey] = useState<string | null>(() => sessionStorage.getItem(SESSION_KEY))
+  const [mode, setMode] = useState<'login' | 'register'>('login')
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
+  const [nome, setNome] = useState('')
+  const [confirmSenha, setConfirmSenha] = useState('')
+  const [registerDone, setRegisterDone] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
   const [checking, setChecking] = useState(false)
 
@@ -74,6 +78,26 @@ export function AdminPage() {
       await useToken(res.token)
     } catch (e) {
       setAuthError(e instanceof Error ? e.message : 'E-mail ou senha inválidos')
+      setChecking(false)
+    }
+  }
+
+  async function doRegister() {
+    if (senha !== confirmSenha) {
+      setAuthError('As senhas não coincidem')
+      return
+    }
+    setChecking(true)
+    setAuthError(null)
+    try {
+      await adminApi.registerFirstAdmin(nome.trim(), email.trim(), senha)
+      setRegisterDone(true)
+      setMode('login')
+      setSenha('')
+      setConfirmSenha('')
+    } catch (e) {
+      setAuthError(e instanceof Error ? e.message : 'Não foi possível criar a conta')
+    } finally {
       setChecking(false)
     }
   }
@@ -117,44 +141,123 @@ export function AdminPage() {
           <div className="bg-white rounded-2xl shadow-2xl p-8">
             <div className="flex items-center gap-2 mb-1">
               <ShieldCheck className="w-5 h-5 text-agro-green" />
-              <h1 className="text-lg font-bold text-gray-800">Área Administrativa</h1>
+              <h1 className="text-lg font-bold text-gray-800">{mode === 'login' ? 'Área Administrativa' : 'Criar conta de administrador'}</h1>
             </div>
-            <p className="text-xs text-gray-500 mb-5">Acesso restrito à equipe NPL — processos judiciais e crédito rural</p>
-            <form onSubmit={e => { e.preventDefault(); if (email.trim() && senha) doLogin() }} className="space-y-3">
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <p className="text-xs text-gray-500 mb-5">
+              {mode === 'login'
+                ? 'Acesso restrito à equipe NPL — processos judiciais e crédito rural'
+                : 'Só funciona se ainda não existir nenhuma conta cadastrada.'}
+            </p>
+
+            {registerDone && mode === 'login' && (
+              <div className="flex items-center gap-2 bg-green-50 text-green-700 rounded-xl px-3 py-2 text-xs mb-3">
+                <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" />Conta criada — entre com seu e-mail e senha.
+              </div>
+            )}
+
+            {mode === 'login' ? (
+              <form onSubmit={e => { e.preventDefault(); if (email.trim() && senha) doLogin() }} className="space-y-3">
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="E-mail"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green text-gray-800"
+                    autoFocus
+                  />
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="password"
+                    value={senha}
+                    onChange={e => setSenha(e.target.value)}
+                    placeholder="Senha"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green text-gray-800"
+                  />
+                </div>
+                {authError && (
+                  <div className="flex items-center gap-2 bg-red-50 text-red-700 rounded-xl px-3 py-2 text-xs">
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />{authError}
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  disabled={checking || !email.trim() || !senha}
+                  className="w-full bg-agro-green hover:bg-agro-dark text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-60"
+                >
+                  {checking ? 'Verificando...' : 'Entrar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMode('register'); setAuthError(null) }}
+                  className="w-full text-center text-xs text-gray-400 hover:text-agro-green pt-1"
+                >
+                  Ainda não tem conta? Criar conta de administrador
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={e => { e.preventDefault(); if (nome.trim() && email.trim() && senha) doRegister() }} className="space-y-3">
                 <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="E-mail"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green text-gray-800"
+                  value={nome}
+                  onChange={e => setNome(e.target.value)}
+                  placeholder="Seu nome"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green text-gray-800"
                   autoFocus
                 />
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="password"
-                  value={senha}
-                  onChange={e => setSenha(e.target.value)}
-                  placeholder="Senha"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green text-gray-800"
-                />
-              </div>
-              {authError && (
-                <div className="flex items-center gap-2 bg-red-50 text-red-700 rounded-xl px-3 py-2 text-xs">
-                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />{authError}
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="E-mail"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green text-gray-800"
+                  />
                 </div>
-              )}
-              <button
-                type="submit"
-                disabled={checking || !email.trim() || !senha}
-                className="w-full bg-agro-green hover:bg-agro-dark text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-60"
-              >
-                {checking ? 'Verificando...' : 'Entrar'}
-              </button>
-            </form>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="password"
+                    value={senha}
+                    onChange={e => setSenha(e.target.value)}
+                    placeholder="Senha (mín. 8 caracteres)"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green text-gray-800"
+                  />
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="password"
+                    value={confirmSenha}
+                    onChange={e => setConfirmSenha(e.target.value)}
+                    placeholder="Confirmar senha"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green text-gray-800"
+                  />
+                </div>
+                {authError && (
+                  <div className="flex items-center gap-2 bg-red-50 text-red-700 rounded-xl px-3 py-2 text-xs">
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />{authError}
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  disabled={checking || !nome.trim() || !email.trim() || senha.length < 8 || !confirmSenha}
+                  className="w-full bg-agro-green hover:bg-agro-dark text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-60"
+                >
+                  {checking ? 'Criando...' : 'Criar conta'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMode('login'); setAuthError(null) }}
+                  className="w-full text-center text-xs text-gray-400 hover:text-agro-green pt-1"
+                >
+                  Já tem conta? Entrar
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </div>

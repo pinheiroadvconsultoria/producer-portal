@@ -121,6 +121,13 @@ export const adminApi = {
       body: JSON.stringify({ email, senha }),
     }),
 
+  /** Cria a 1ª conta de administrador (só funciona enquanto nenhuma existir ainda). */
+  registerFirstAdmin: (nome: string, email: string, senha: string) =>
+    request<{ data: { id: string; nome: string; email: string } }>('/api/admin/admin-users', {
+      method: 'POST',
+      body: JSON.stringify({ nome, email, senha }),
+    }),
+
   listLeads: (key: string) => adminRequest<{ data: AdminLeadSummary[] }>(key, '/api/admin/leads'),
 
   createLead: (key: string, lead: NewLeadInput) =>
