@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, EyeOff, Loader2, AlertCircle, ShieldCheck } from 'lucide-react'
+import { Eye, EyeOff, Loader2, AlertCircle, ShieldCheck, KeyRound } from 'lucide-react'
 import { api } from '../services/api'
 import { usePortalStore } from '../store/usePortalStore'
 import { FirstAccess } from './FirstAccess'
@@ -88,6 +88,12 @@ function LogoMuda3D() {
       </div>
     </div>
   )
+}
+
+/** Navegação client-side (sem recarregar) — necessária porque o PWA instalado não tem barra de endereço. */
+function navigateTo(path: string) {
+  window.history.pushState(null, '', path)
+  window.dispatchEvent(new PopStateEvent('popstate'))
 }
 
 export function Login() {
@@ -260,15 +266,20 @@ export function Login() {
           <span>Conexão protegida por criptografia</span>
         </div>
 
-        <div className="mt-4 text-center">
+        <div className="mt-4 flex items-center justify-center gap-4">
           <button
-            onClick={() => {
-              window.history.pushState(null, '', '/download')
-              window.dispatchEvent(new PopStateEvent('popstate'))
-            }}
+            onClick={() => navigateTo('/download')}
             className="text-[12px] text-white/30 underline-offset-4 transition hover:text-white/60 hover:underline"
           >
             Instalar aplicativo no Chrome
+          </button>
+          <span className="text-white/15">·</span>
+          <button
+            onClick={() => navigateTo('/admin')}
+            className="inline-flex items-center gap-1 text-[12px] text-white/30 underline-offset-4 transition hover:text-white/60 hover:underline"
+          >
+            <KeyRound className="h-3 w-3" />
+            Acesso administrador
           </button>
         </div>
 
