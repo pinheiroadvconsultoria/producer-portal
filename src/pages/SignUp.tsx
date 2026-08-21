@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { api } from '../services/api'
 import { usePortalStore } from '../store/usePortalStore'
+import { LegalConsent } from '../components/LegalConsent'
 
 function maskDoc(v: string) {
   const d = v.replace(/\D/g, '').slice(0, 14)
@@ -46,6 +47,7 @@ export function SignUp({ onBack, onNeedFirstAccess }: Props) {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm]   = useState('')
   const [showPass, setShowPass] = useState(false)
+  const [aceiteTermos, setAceiteTermos] = useState(false)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState<string | null>(null)
   const [suggestFirstAccess, setSuggestFirstAccess] = useState(false)
@@ -55,6 +57,10 @@ export function SignUp({ onBack, onNeedFirstAccess }: Props) {
     setError(null)
     setSuggestFirstAccess(false)
 
+    if (!aceiteTermos) {
+      setError('É preciso aceitar os Termos de Uso e a Política de Privacidade')
+      return
+    }
     if (password !== confirm) {
       setError('As senhas não coincidem')
       return
@@ -74,6 +80,7 @@ export function SignUp({ onBack, onNeedFirstAccess }: Props) {
         email: email.trim() || undefined,
         municipio: municipio.trim() || undefined,
         uf: uf.trim() || undefined,
+        aceiteTermos,
       })
       setAuth(res.token, res.producer.nome)
     } catch (err: unknown) {
@@ -187,6 +194,8 @@ export function SignUp({ onBack, onNeedFirstAccess }: Props) {
               </div>
             </div>
 
+            <LegalConsent checked={aceiteTermos} onChange={setAceiteTermos} />
+
             {error && (
               <div className="flex items-start gap-2 bg-red-50 text-red-700 rounded-xl px-4 py-3 text-sm">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -202,7 +211,7 @@ export function SignUp({ onBack, onNeedFirstAccess }: Props) {
               </div>
             )}
 
-            <button type="submit" disabled={loading}
+            <button type="submit" disabled={loading || !aceiteTermos}
               className="w-full bg-agro-green hover:bg-agro-dark text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-60 mt-2">
               {loading ? (<><Loader2 className="w-4 h-4 animate-spin" /> Criando conta...</>) : 'Criar conta e acessar'}
             </button>

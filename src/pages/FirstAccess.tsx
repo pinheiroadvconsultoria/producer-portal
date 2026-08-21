@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Sprout, FileText, Phone, Lock, Eye, EyeOff, Loader2, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react'
 import { api } from '../services/api'
 import { usePortalStore } from '../store/usePortalStore'
+import { LegalConsent } from '../components/LegalConsent'
 
 function maskPhone(v: string) {
   const d = v.replace(/\D/g, '').slice(0, 11)
@@ -33,6 +34,7 @@ export function FirstAccess({ onBack }: Props) {
   const [newPass, setNewPass]     = useState('')
   const [confirm, setConfirm]     = useState('')
   const [showPass, setShowPass]   = useState(false)
+  const [aceiteTermos, setAceiteTermos] = useState(false)
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState<string | null>(null)
   const [success, setSuccess]     = useState(false)
@@ -41,6 +43,10 @@ export function FirstAccess({ onBack }: Props) {
     e.preventDefault()
     setError(null)
 
+    if (!aceiteTermos) {
+      setError('É preciso aceitar os Termos de Uso e a Política de Privacidade')
+      return
+    }
     if (newPass.length < 6) {
       setError('A senha deve ter pelo menos 6 caracteres')
       return
@@ -55,7 +61,8 @@ export function FirstAccess({ onBack }: Props) {
       const res = await api.firstAccess(
         doc.replace(/\D/g, ''),
         phone.replace(/\D/g, ''),
-        newPass
+        newPass,
+        aceiteTermos
       )
       setSuccess(true)
       setTimeout(() => {
@@ -181,6 +188,8 @@ export function FirstAccess({ onBack }: Props) {
                   </div>
                 </div>
 
+                <LegalConsent checked={aceiteTermos} onChange={setAceiteTermos} />
+
                 {/* Error */}
                 {error && (
                   <div className="flex items-center gap-2 bg-red-50 text-red-700 rounded-xl px-4 py-3 text-sm">
@@ -191,7 +200,7 @@ export function FirstAccess({ onBack }: Props) {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || !aceiteTermos}
                   className="w-full bg-agro-green hover:bg-agro-dark text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
                 >
                   {loading ? (

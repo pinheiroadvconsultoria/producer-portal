@@ -68,10 +68,10 @@ export const api = {
       body: JSON.stringify({ cpfCnpj, password }),
     }),
 
-  firstAccess: (cpfCnpj: string, whatsapp: string, newPassword: string) =>
+  firstAccess: (cpfCnpj: string, whatsapp: string, newPassword: string, aceiteTermos: boolean) =>
     request<AuthResponse>('/api/producer/first-access', {
       method: 'POST',
-      body: JSON.stringify({ cpfCnpj, whatsapp, newPassword }),
+      body: JSON.stringify({ cpfCnpj, whatsapp, newPassword, aceiteTermos }),
     }),
 
   /** Autocadastro público — qualquer interessado cria sua conta */
@@ -80,6 +80,9 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+
+  /** Termos de Uso e Política de Privacidade — texto único vindo do backend */
+  legal: () => request<{ versao: string; texto: string }>('/api/legal'),
 
   changePassword: (currentPassword: string, newPassword: string) =>
     request('/api/producer/change-password', {
@@ -423,6 +426,7 @@ export interface SignUpInput {
   email?: string
   municipio?: string
   uf?: string
+  aceiteTermos: boolean
 }
 
 export interface NewLeadInput {
