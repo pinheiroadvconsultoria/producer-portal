@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   RefreshCw, Search, Sprout, CheckCircle2, XCircle, Clock, Gift, Landmark,
-  FileText, ShieldAlert, ShieldCheck, Lock, Unlock,
+  FileText, ShieldAlert, ShieldCheck, Lock, Unlock, Pencil,
 } from 'lucide-react'
 import { adminApi, type SubscriberRow, type SubStatus, type UserDetail } from '../services/api'
 
@@ -268,6 +268,27 @@ function UserDetailModal({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Correção do WhatsApp do cadastro (identidade — é como o Eduardo reconhece
+  // quem escreve no WhatsApp). Editor inline no cabeçalho do modal.
+  const [waAtual, setWaAtual] = useState(row.whatsapp)
+  const [editandoWa, setEditandoWa] = useState(false)
+  const [novoWa, setNovoWa] = useState(row.whatsapp)
+  const [waBusy, setWaBusy] = useState(false)
+
+  async function salvarWhatsapp() {
+    setWaBusy(true)
+    setDetailError(null)
+    try {
+      await adminApi.updateWhatsapp(adminKey, row.id, novoWa)
+      setWaAtual(novoWa.replace(/\D/g, ''))
+      setEditandoWa(false)
+    } catch (e) {
+      setDetailError(e instanceof Error ? e.message : 'Falha ao alterar o WhatsApp')
+    } finally {
+      setWaBusy(false)
+    }
+  }
+
   async function loadDetail() {
     setLoadingDetail(true)
     setDetailError(null)
@@ -324,8 +345,43 @@ function UserDetailModal({
         <div className="flex items-start justify-between mb-1">
           <div>
             <h3 className="font-bold text-gray-800">{row.nome}</h3>
-            <p className="text-xs text-gray-400">
-              {row.cpfCnpj || 'sem CPF/CNPJ'} · {row.whatsapp} · {row.municipio}/{row.uf}
+            <p className="text-xs text-gray-400 flex items-center gap-1.5 flex-wrap">
+              <span>{row.cpfCnpj || 'sem CPF/CNPJ'} ·</span>
+              {editandoWa ? (
+                <span className="inline-flex items-center gap-1">
+                  <input
+                    value={novoWa}
+                    onChange={(e) => setNovoWa(e.target.value)}
+                    className="border border-gray-300 rounded-lg px-2 py-0.5 text-xs w-36 text-gray-700"
+                    placeholder="DDD + número"
+                  />
+                  <button
+                    onClick={salvarWhatsapp}
+                    disabled={waBusy}
+                    className="px-2 py-0.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50"
+                  >
+                    {waBusy ? 'Salvando...' : 'Salvar'}
+                  </button>
+                  <button
+                    onClick={() => { setEditandoWa(false); setNovoWa(waAtual) }}
+                    className="px-2 py-0.5 rounded-lg text-xs text-gray-500 border border-gray-200 hover:bg-gray-50"
+                  >
+                    Cancelar
+                  </button>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1">
+                  {waAtual}
+                  <button
+                    onClick={() => setEditandoWa(true)}
+                    title="Corrigir o WhatsApp deste cadastro"
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                </span>
+              )}
+              <span>· {row.municipio}/{row.uf}</span>
             </p>
           </div>
           <button

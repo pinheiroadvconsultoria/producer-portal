@@ -147,6 +147,11 @@ export const adminApi = {
   updateAccess: (key: string, id: string, portalBloqueado: boolean) =>
     adminRequest(key, `/api/admin/leads/${id}/access`, { method: 'PATCH', body: JSON.stringify({ portalBloqueado }) }),
 
+  // Corrige o WhatsApp do cadastro (identidade — é como o Eduardo reconhece
+  // quem escreve; rota própria no backend, com checagem de duplicidade).
+  updateWhatsapp: (key: string, id: string, whatsapp: string) =>
+    adminRequest(key, `/api/admin/leads/${id}/whatsapp`, { method: 'PATCH', body: JSON.stringify({ whatsapp }) }),
+
   addMovement: (key: string, id: string, m: { data: string; titulo: string; descricao?: string }) =>
     adminRequest<{ data: ProcessMovement }>(key, `/api/admin/leads/${id}/movements`, {
       method: 'POST',
