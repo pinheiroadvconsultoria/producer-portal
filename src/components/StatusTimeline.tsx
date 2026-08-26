@@ -1,7 +1,7 @@
 import { CheckCircle2, Circle, Clock } from 'lucide-react'
 import type { CrmStage } from '../services/api'
 
-const STAGES: { key: CrmStage; label: string; description: string }[] = [
+export const STAGES: { key: CrmStage; label: string; description: string }[] = [
   { key: 'lead_captado',             label: 'Cadastro Recebido',       description: 'Seus dados foram registrados' },
   { key: 'documentacao_recebida',    label: 'Documentação em Análise', description: 'Documentos recebidos e em verificação' },
   { key: 'analise_concluida',        label: 'Análise Concluída',       description: 'Análise de crédito finalizada' },

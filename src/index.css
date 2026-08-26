@@ -53,4 +53,16 @@
       transform: rotateX(8deg) rotateY(-18deg);
     }
   }
+
+  /* Transição entre o hub de módulos e o dashboard de cada um. */
+  .view-enter {
+    animation: view-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @keyframes view-enter {
+    from { opacity: 0; transform: translateY(10px) scale(0.99); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .view-enter { animation: none; }
+  }
 }
