@@ -131,6 +131,20 @@ export function AdminPage() {
     setLeads([])
   }
 
+  // 401 disparado por qualquer chamada admin (token expirado ou conta
+  // desativada enquanto já estava logado) — api.ts avisa por evento global
+  // porque este login não usa o Zustand store do produtor.
+  useEffect(() => {
+    function onSessionExpired(e: Event) {
+      const detail = (e as CustomEvent<{ message: string }>).detail
+      logout()
+      setAuthError(detail?.message || 'Sua sessão expirou. Faça login novamente.')
+    }
+    window.addEventListener('admin-session-expired', onSessionExpired)
+    return () => window.removeEventListener('admin-session-expired', onSessionExpired)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   if (!adminKey) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-agro-dark via-agro-green to-agro-lime flex items-center justify-center p-4">

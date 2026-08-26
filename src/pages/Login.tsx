@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Eye, EyeOff, Loader2, AlertCircle, ShieldCheck, KeyRound } from 'lucide-react'
 import { api } from '../services/api'
 import { usePortalStore } from '../store/usePortalStore'
@@ -98,13 +98,21 @@ function navigateTo(path: string) {
 
 export function Login() {
   const setAuth = usePortalStore(s => s.setAuth)
+  const sessionExpiredMessage = usePortalStore(s => s.sessionExpiredMessage)
+  const setSessionExpired     = usePortalStore(s => s.setSessionExpired)
   const [doc, setDoc]           = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState<string | null>(null)
+  const [error, setError]       = useState<string | null>(sessionExpiredMessage)
   const [firstAccess, setFirstAccess] = useState(false)
   const [signUp, setSignUp]     = useState(false)
+
+  // Mostra a mensagem só desta vez — some do estado global assim que exibida,
+  // pra não reaparecer num login futuro que não tem nada a ver com isso.
+  useEffect(() => {
+    if (sessionExpiredMessage) setSessionExpired(null)
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

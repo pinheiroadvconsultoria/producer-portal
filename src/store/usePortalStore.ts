@@ -8,12 +8,15 @@ interface PortalState {
   contract: ContractData | null
   loading: boolean
   error: string | null
+  /** Mostrada uma vez na tela de login após um 401 derrubar a sessão sozinho (token expirado/bloqueio). */
+  sessionExpiredMessage: string | null
 
   setAuth: (token: string, name: string) => void
   setData: (data: ProducerData) => void
   setContract: (contract: ContractData | null) => void
   setLoading: (v: boolean) => void
   setError: (e: string | null) => void
+  setSessionExpired: (msg: string | null) => void
   logout: () => void
 }
 
@@ -24,6 +27,7 @@ export const usePortalStore = create<PortalState>((set) => ({
   contract:     null,
   loading:      false,
   error:        null,
+  sessionExpiredMessage: null,
 
   setAuth: (token, name) => {
     localStorage.setItem('producer_token', token)
@@ -35,6 +39,7 @@ export const usePortalStore = create<PortalState>((set) => ({
   setContract: (contract) => set({ contract }),
   setLoading:  (loading)  => set({ loading }),
   setError:    (error)    => set({ error }),
+  setSessionExpired: (sessionExpiredMessage) => set({ sessionExpiredMessage }),
 
   logout: () => {
     localStorage.removeItem('producer_token')

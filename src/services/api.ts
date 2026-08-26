@@ -1,3 +1,5 @@
+import { usePortalStore } from '../store/usePortalStore'
+
 const DIRECT = import.meta.env.VITE_API_URL || 'https://agrocredit-api-ix49.onrender.com'
 
 /**
@@ -44,7 +46,28 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
         // HTML = proxy inexistente ou página de erro do host — tenta o próximo caminho
         if (!ct.includes('application/json')) continue
         const json = await res.json()
-        if (!res.ok) throw new ApiHttpError(json.error || 'Erro na requisição')
+        if (!res.ok) {
+          // 401 com token enviado = sessão inválida (expirou, ou foi bloqueada
+          // enquanto o produtor já estava logado) — desloga sozinho em vez de
+          // deixar a tela presa num erro genérico. Sem token (ex.: senha
+          // errada no login) o 401 é só resposta normal do formulário.
+          if (res.status === 401 && token) {
+            usePortalStore.getState().logout()
+            usePortalStore.getState().setSessionExpired(
+              json.blocked
+                ? String(json.error || 'Seu acesso ao portal foi bloqueado.')
+                : 'Sua sessão expirou. Faça login novamente.'
+            )
+          }
+          // Mesma lógica pro lado admin — que não usa o Zustand store, então
+          // avisa por evento global (ouvido em AdminPage.tsx) em vez de setState direto.
+          if (res.status === 401 && (headers as Record<string, string>)['x-admin-key']) {
+            window.dispatchEvent(new CustomEvent('admin-session-expired', {
+              detail: { message: String(json.error || 'Sua sessão expirou. Faça login novamente.') },
+            }))
+          }
+          throw new ApiHttpError(json.error || 'Erro na requisição')
+        }
         return json
       } catch (e) {
         if (e instanceof ApiHttpError) throw e
