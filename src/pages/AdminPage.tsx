@@ -400,6 +400,7 @@ export function AdminPage() {
             lead={selected}
             adminKey={adminKey}
             onUpdated={() => { openLead(selected.id); refreshLeads() }}
+            onDeleted={() => { setSelected(null); refreshLeads() }}
           />
         ) : (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center text-gray-400">
@@ -519,7 +520,9 @@ function NewLeadForm({
   )
 }
 
-function LeadEditor({ lead, adminKey, onUpdated }: { lead: ProducerData; adminKey: string; onUpdated: () => void }) {
+function LeadEditor({
+  lead, adminKey, onUpdated, onDeleted,
+}: { lead: ProducerData; adminKey: string; onUpdated: () => void; onDeleted: () => void }) {
   const [temProcessoJudicial, setTemProcessoJudicial] = useState(lead.temProcessoJudicial ?? false)
   const [tipoAcao, setTipoAcao] = useState<CaseType | ''>(lead.tipoAcao || '')
   const [numeroProcesso, setNumeroProcesso] = useState(lead.numeroProcesso || '')
@@ -537,6 +540,24 @@ function LeadEditor({ lead, adminKey, onUpdated }: { lead: ProducerData; adminKe
 
   const [portalBloqueado, setPortalBloqueado] = useState(lead.portalBloqueado ?? false)
   const [togglingAccess, setTogglingAccess] = useState(false)
+
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  async function handleDelete() {
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      await adminApi.deleteLead(adminKey, lead.id)
+      onDeleted()
+    } catch (e) {
+      setDeleteError(e instanceof Error ? e.message : 'Erro ao apagar produtor')
+      setConfirmingDelete(false)
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   async function toggleAccess() {
     const next = !portalBloqueado
@@ -725,6 +746,48 @@ function LeadEditor({ lead, adminKey, onUpdated }: { lead: ProducerData; adminKe
           </div>
         </div>
       )}
+
+      {/* Zona de risco — só apaga se não houver nenhum histórico associado */}
+      <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-5">
+        <h3 className="font-bold text-red-700 text-sm mb-1 flex items-center gap-2">
+          <Trash2 className="w-4 h-4" />Apagar produtor
+        </h3>
+        <p className="text-xs text-gray-400 mb-3">
+          Remove o cadastro definitivamente. Só funciona se não houver histórico (mensagens, documentos,
+          tarefas etc.) — nesse caso, use "Bloquear acesso" em vez de apagar.
+        </p>
+        {deleteError && (
+          <div className="flex items-start gap-2 bg-red-50 text-red-700 rounded-xl px-3 py-2 text-xs mb-3">
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />{deleteError}
+          </div>
+        )}
+        {!confirmingDelete ? (
+          <button
+            onClick={() => setConfirmingDelete(true)}
+            className="inline-flex items-center gap-1.5 text-red-600 hover:text-white hover:bg-red-600 border border-red-200 text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />Apagar produtor
+          </button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-gray-700">Apagar {lead.nome} definitivamente?</span>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60"
+            >
+              {deleting ? 'Apagando...' : 'Sim, apagar'}
+            </button>
+            <button
+              onClick={() => setConfirmingDelete(false)}
+              disabled={deleting}
+              className="text-gray-500 hover:text-gray-700 text-xs font-medium px-2 py-1.5"
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

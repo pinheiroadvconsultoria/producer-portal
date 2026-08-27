@@ -170,6 +170,11 @@ export const adminApi = {
   updateAccess: (key: string, id: string, portalBloqueado: boolean) =>
     adminRequest(key, `/api/admin/leads/${id}/access`, { method: 'PATCH', body: JSON.stringify({ portalBloqueado }) }),
 
+  // Recusa apagar (409) se o produtor tiver qualquer histórico associado —
+  // nesse caso a UI deve sugerir "Bloquear acesso" em vez de apagar.
+  deleteLead: (key: string, id: string) =>
+    adminRequest<{ deletedId: string }>(key, `/api/admin/leads/${id}`, { method: 'DELETE' }),
+
   // Corrige o WhatsApp do cadastro (identidade — é como o Eduardo reconhece
   // quem escreve; rota própria no backend, com checagem de duplicidade).
   updateWhatsapp: (key: string, id: string, whatsapp: string) =>
