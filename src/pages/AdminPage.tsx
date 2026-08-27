@@ -10,7 +10,7 @@
 import { useEffect, useState } from 'react'
 import {
   Lock, Mail, Unlock, Search, Gavel, Plus, Trash2, Save, RefreshCw, ChevronLeft, LogOut, ShieldCheck, AlertCircle,
-  UserPlus, X,
+  UserPlus, X, Eye, EyeOff,
 } from 'lucide-react'
 import {
   adminApi, type AdminLeadSummary, type CaseType, type NewLeadInput, type ProcessMovement, type ProducerData,
@@ -44,6 +44,7 @@ export function AdminPage() {
   const [registerDone, setRegisterDone] = useState(false)
   const [authError, setAuthError] = useState<string | null>(null)
   const [checking, setChecking] = useState(false)
+  const [showSenha, setShowSenha] = useState(false)
 
   const [leads, setLeads] = useState<AdminLeadSummary[]>([])
   const [loadingLeads, setLoadingLeads] = useState(false)
@@ -185,12 +186,20 @@ export function AdminPage() {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
-                    type="password"
+                    type={showSenha ? 'text' : 'password'}
                     value={senha}
                     onChange={e => setSenha(e.target.value)}
                     placeholder="Senha"
-                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green text-gray-800"
+                    className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green text-gray-800"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowSenha(v => !v)}
+                    aria-label={showSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
                 {authError && (
                   <div className="flex items-center gap-2 bg-red-50 text-red-700 rounded-xl px-3 py-2 text-xs">
@@ -234,22 +243,38 @@ export function AdminPage() {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
-                    type="password"
+                    type={showSenha ? 'text' : 'password'}
                     value={senha}
                     onChange={e => setSenha(e.target.value)}
                     placeholder="Senha (mín. 8 caracteres)"
-                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green text-gray-800"
+                    className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green text-gray-800"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowSenha(v => !v)}
+                    aria-label={showSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
-                    type="password"
+                    type={showSenha ? 'text' : 'password'}
                     value={confirmSenha}
                     onChange={e => setConfirmSenha(e.target.value)}
                     placeholder="Confirmar senha"
-                    className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green text-gray-800"
+                    className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-agro-green text-gray-800"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowSenha(v => !v)}
+                    aria-label={showSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
                 {authError && (
                   <div className="flex items-center gap-2 bg-red-50 text-red-700 rounded-xl px-3 py-2 text-xs">
