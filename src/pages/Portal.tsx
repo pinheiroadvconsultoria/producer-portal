@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   LogOut, RefreshCw, Sprout, MapPin, Phone, Mail, Building2, ChevronLeft, ChevronRight,
-  Activity, ReceiptText, FileSignature, AlertCircle, Newspaper, CheckCircle2,
+  Activity, ReceiptText, FileSignature, AlertCircle, Newspaper, CheckCircle2, KeyRound,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { api } from '../services/api'
@@ -18,8 +18,9 @@ import { ProcessMovements } from '../components/ProcessMovements'
 import { EduardoChat } from '../components/EduardoChat'
 import { TiltCard } from '../components/TiltCard'
 import { ProgressRing } from '../components/ProgressRing'
+import { ChangePasswordForm } from '../components/ChangePasswordForm'
 
-type ModuleKey = 'status' | 'proposta' | 'contrato' | 'bancario' | 'pendencias' | 'noticias'
+type ModuleKey = 'status' | 'proposta' | 'contrato' | 'bancario' | 'pendencias' | 'noticias' | 'conta'
 type View = 'hub' | ModuleKey
 
 const CONTRACT_STATUS_LABEL: Record<string, string> = {
@@ -93,6 +94,11 @@ const MODULES: ModuleDef[] = [
     iconBg: 'bg-agro-lime/10', iconColor: 'text-agro-green',
     stat: () => 'Plano Safra 2026/27',
   },
+  {
+    key: 'conta', label: 'Minha Conta', icon: KeyRound,
+    iconBg: 'bg-gray-100', iconColor: 'text-gray-600',
+    stat: () => 'Senha e segurança',
+  },
 ]
 
 const MODULE_TITLES: Record<ModuleKey, string> = {
@@ -102,6 +108,7 @@ const MODULE_TITLES: Record<ModuleKey, string> = {
   bancario:   'Status Bancário',
   pendencias: 'Pendências',
   noticias:   'Notícias & Links',
+  conta:      'Minha Conta',
 }
 
 export function Portal() {
@@ -312,6 +319,10 @@ export function Portal() {
                 <NewsSection />
                 <InstitutionalLinks />
               </>
+            )}
+
+            {view === 'conta' && (
+              <ChangePasswordForm />
             )}
           </div>
         )}

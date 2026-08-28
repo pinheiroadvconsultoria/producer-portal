@@ -51,7 +51,9 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
           // enquanto o produtor já estava logado) — desloga sozinho em vez de
           // deixar a tela presa num erro genérico. Sem token (ex.: senha
           // errada no login) o 401 é só resposta normal do formulário.
-          if (res.status === 401 && token) {
+          // Exceção: em /change-password um 401 é "senha atual incorreta",
+          // não sessão inválida — não pode derrubar o login por isso.
+          if (res.status === 401 && token && !path.includes('/change-password')) {
             usePortalStore.getState().logout()
             usePortalStore.getState().setSessionExpired(
               json.blocked
