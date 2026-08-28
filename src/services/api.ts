@@ -235,6 +235,12 @@ export const adminApi = {
 
   getUserDetail: (key: string, leadId: string) =>
     adminRequest<{ data: UserDetail }>(key, `/api/admin/fazendai/users/${leadId}`),
+
+  adjustCredits: (key: string, leadId: string, ajuste: number, motivo: string) =>
+    adminRequest<{ data: CreditsData }>(key, `/api/admin/fazendai/credits/${leadId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ ajuste, motivo }),
+    }),
 }
 
 // ── Tipos do SaaS FAZEND.AI ──────────────────────────────────────────────────
@@ -300,6 +306,23 @@ export interface UserDetailCreditRequest {
   property: { nome: string } | null
 }
 
+export interface CreditTransaction {
+  id: string
+  tipo: string
+  quantidade: number
+  motivo: string
+  saldoApos: number
+  createdAt: string
+}
+
+export interface CreditsData {
+  id: string
+  leadId: string
+  saldo: number
+  renovaEm: string
+  historico: CreditTransaction[]
+}
+
 export interface UserDetail {
   id: string
   nome: string
@@ -311,6 +334,7 @@ export interface UserDetail {
   createdAt: string
   portalBloqueado: boolean
   subscription: SubscriptionData | null
+  credits: CreditsData | null
   properties: UserDetailProperty[]
   creditRequests: UserDetailCreditRequest[]
   documentsTotal: number

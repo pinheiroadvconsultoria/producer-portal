@@ -289,6 +289,36 @@ function UserDetailModal({
     }
   }
 
+  // Ajuste manual de créditos de IA (Onda Q) — ex.: dar créditos extra de
+  // cortesia sem esperar o ciclo de 30 dias renovar.
+  const [ajusteCreditos, setAjusteCreditos] = useState('')
+  const [motivoAjuste, setMotivoAjuste] = useState('')
+  const [creditosBusy, setCreditosBusy] = useState(false)
+
+  async function salvarAjusteCreditos() {
+    const valor = Number(ajusteCreditos)
+    if (!Number.isFinite(valor) || valor === 0) {
+      setDetailError('Informe um número de créditos diferente de zero.')
+      return
+    }
+    if (motivoAjuste.trim().length < 3) {
+      setDetailError('Descreva o motivo do ajuste.')
+      return
+    }
+    setCreditosBusy(true)
+    setDetailError(null)
+    try {
+      const res = await adminApi.adjustCredits(adminKey, row.id, valor, motivoAjuste.trim())
+      setDetail((d) => (d ? { ...d, credits: res.data } : d))
+      setAjusteCreditos('')
+      setMotivoAjuste('')
+    } catch (e) {
+      setDetailError(e instanceof Error ? e.message : 'Falha ao ajustar créditos')
+    } finally {
+      setCreditosBusy(false)
+    }
+  }
+
   async function loadDetail() {
     setLoadingDetail(true)
     setDetailError(null)
@@ -544,6 +574,74 @@ function UserDetailModal({
           </p>
 
           {error && <p className="text-xs text-red-600">{error}</p>}
+        </div>
+
+        {/* Créditos de IA (Onda Q) — junto com a assinatura, não no lugar dela */}
+        <h4 className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 mt-5 flex items-center gap-1.5">
+          <Sprout className="h-3.5 w-3.5" /> Créditos de IA
+        </h4>
+        {detail?.credits ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span>
+                <span className="font-semibold text-gray-800">{detail.credits.saldo}</span>
+                <span className="text-gray-500"> créditos disponíveis</span>
+              </span>
+              <span className="text-xs text-gray-400">
+                Renova em {fmt(detail.credits.renovaEm)}
+              </span>
+            </div>
+
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Ajuste (+/-)</label>
+                <input
+                  type="number"
+                  value={ajusteCreditos}
+                  onChange={(e) => setAjusteCreditos(e.target.value)}
+                  placeholder="Ex.: 50 ou -10"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-agro-green"
+                />
+              </div>
+              <div className="flex-[2]">
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Motivo</label>
+                <input
+                  value={motivoAjuste}
+                  onChange={(e) => setMotivoAjuste(e.target.value)}
+                  placeholder="Ex.: cortesia por indicação"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-agro-green"
+                />
+              </div>
+              <button
+                onClick={salvarAjusteCreditos}
+                disabled={creditosBusy}
+                className="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+              >
+                {creditosBusy ? 'Ajustando...' : 'Ajustar'}
+              </button>
+            </div>
+
+            {detail.credits.historico.length > 0 && (
+              <ul className="space-y-1 text-xs text-gray-500 max-h-28 overflow-y-auto">
+                {detail.credits.historico.map((t) => (
+                  <li key={t.id} className="flex items-center justify-between">
+                    <span>{t.motivo}</span>
+                    <span className="flex items-center gap-2">
+                      <span className={t.quantidade > 0 ? 'text-emerald-700 font-semibold' : ''}>
+                        {t.quantidade > 0 ? `+${t.quantidade}` : t.quantidade}
+                      </span>
+                      <span>{fmt(t.createdAt)}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-gray-400">Este cadastrado ainda não usou o Eduardo no FAZEND.AI.</p>
+        )}
+
+        <div className="mt-5">
 
           <div className="flex gap-2 pt-1">
             <button
