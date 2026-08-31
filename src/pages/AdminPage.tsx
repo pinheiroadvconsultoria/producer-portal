@@ -54,7 +54,7 @@ export function AdminPage() {
   const [section, setSection] = useState<Section>('triagem')
 
   /** Usa um token (de sessão salva ou recém-emitido no login) pra carregar a lista. */
-  async function useToken(token: string) {
+  async function carregarSessao(token: string) {
     setChecking(true)
     setAuthError(null)
     try {
@@ -76,7 +76,7 @@ export function AdminPage() {
     setAuthError(null)
     try {
       const res = await adminApi.login(email.trim(), senha)
-      await useToken(res.token)
+      await carregarSessao(res.token)
     } catch (e) {
       setAuthError(e instanceof Error ? e.message : 'E-mail ou senha inválidos')
       setChecking(false)
@@ -104,7 +104,7 @@ export function AdminPage() {
   }
 
   useEffect(() => {
-    if (adminKey) useToken(adminKey)
+    if (adminKey) carregarSessao(adminKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
