@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { api } from '../services/api'
+import LegalMarkdown from './LegalMarkdown'
 
 /**
  * Checkbox de aceite dos Termos de Uso/Política de Privacidade + WhatsApp,
@@ -50,8 +51,8 @@ export function LegalConsent({ checked, onChange }: { checked: boolean; onChange
       </label>
 
       {open && (
-        <div className="mt-2 max-h-48 overflow-y-auto rounded-xl bg-gray-50 p-3 text-xs text-gray-600 whitespace-pre-wrap">
-          {loadingTexto ? 'Carregando...' : texto}
+        <div className="mt-2 max-h-48 overflow-y-auto rounded-xl bg-gray-50 p-3 text-xs text-gray-600">
+          {loadingTexto ? 'Carregando...' : <LegalMarkdown text={texto || ''} />}
         </div>
       )}
     </div>
